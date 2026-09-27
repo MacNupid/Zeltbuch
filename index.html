@@ -257,6 +257,11 @@ table.rep tr:last-child th,table.rep tr:last-child td{border-bottom:0}
 .run-row.cur{background:var(--accent-soft);border-radius:12px;margin-inline:-8px;padding-inline:8px;border-top-color:transparent}
 .phase-list .chip{min-width:78px;justify-content:center}
 details summary{cursor:pointer;font-weight:700}
+.prod-tog{border:0;background:none;padding:0;color:inherit;font:inherit;display:inline-flex;align-items:center;gap:6px;text-align:left;cursor:pointer;min-height:32px}
+.prod-tog .car{color:var(--accent);font-size:13px;width:12px}
+.feed-tbl .prod-row.open td{border-bottom-color:transparent}
+.price-edit td{background:var(--surface2);padding-top:4px;padding-bottom:12px}
+.price-edit input{min-height:40px}
 .price-row{display:block}
 .price-row summary{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;list-style:none}
 .price-row summary::-webkit-details-marker{display:none}
@@ -864,7 +869,6 @@ function viewFeed(){
   ${miss?`<div class="banner stack" style="gap:8px;margin:0"><span>Laut Run bist du in ${miss.ph} Woche ${miss.n}, der Plan endet bei ${miss.ph} ${miss.max}.</span><div class="row"><button class="btn small" data-act="weekFill">${miss.n-miss.max===1?`${miss.ph} ${miss.n}`:`${miss.ph} ${miss.max+1}–${miss.n}`} anlegen</button><span class="small muted">als Kopie von Woche ${miss.max}</span></div></div>`:''}
   <section class="card" id="feedOut">${feedOut()}</section>
   <div class="row"><button class="btn primary grow" data-act="feedSave" ${run?'':'disabled'}>Mischung speichern</button></div>
-  ${priceSection(plan)}
   <section><div class="sec-h"><span class="sec">Letzte Mischungen</span></div>
   <div class="card">${feeds.length?`<div class="list">${feeds.map(f=>`<div class="li"><div class="grow"><div class="t">${esc(f.weekLabel)} · ${fmtDE(f.tankL,1)} L</div><div class="d">${fmtDate(f.at)} ${fmtTime(f.at)} · Soll EC ${esc(f.targetEc||'–')} · Ist EC ${esc(f.measuredEc||'–')} · pH ${esc(f.measuredPh||'–')}${f.note?' · '+esc(f.note):''}</div></div><button class="icon-btn" data-act="del" data-store="feeds" data-id="${f.id}" data-confirm aria-label="Mischung löschen">✕</button></div>`).join('')}</div>`:'<p class="muted">Gespeicherte Mischungen erscheinen hier mit gemessenem EC und pH.</p>'}</div></section>`;
 }
@@ -874,11 +878,14 @@ function feedOut(){
   const tank=parseNum(U.tankL);
   if(isNaN(tank)||tank<=0)return '<p class="muted">Gib die Wassermenge im Tank ein.</p>';
   const rows=feedCalc(plan,week,tank,U.pos);
-  const costs=rows.map(r=>prodCost(r.name,r.amount)),anyC=costs.some(c=>!isNaN(c)),sumC=costs.reduce((a,c)=>a+(isNaN(c)?0:c),0),missC=costs.filter(c=>isNaN(c)).length;
-  return `<div class="tbl-wrap"><table><thead><tr><th>#</th><th>Produkt</th><th class="r">Dosis / ${fmtDE(parseNum(plan.baseL)||10)} L</th><th class="r">In ${fmtDE(tank,1)} L</th></tr></thead><tbody>
-  ${rows.length?rows.map((r,i)=>`<tr><td class="ord">${r.i}</td><td><b>${esc(r.name)}</b></td><td class="r num">${r.range[0]===r.range[1]?fmtDE(r.range[0]):`${fmtDE(r.range[0])}–${fmtDE(r.range[1])} → ${fmtDE(r.dose)}`} ${esc(r.unit)}</td><td class="r amt">${fmtAmt(r.amount)} ${esc(r.unit)}${anyC?`<div class="small muted" style="font:13px var(--body)">${isNaN(costs[i])?'kein Preis':eur(costs[i])}</div>`:''}</td></tr>`).join(''):'<tr><td colspan="4" class="muted">In dieser Woche kein Dünger.</td></tr>'}
+  U.openPrice=U.openPrice||{};
+  const costs=rows.map(r=>prodCost(r.name,r.amount));
+  return `<div class="tbl-wrap"><table class="feed-tbl"><thead><tr><th>#</th><th>Produkt</th><th class="r">Dosis / ${fmtDE(parseNum(plan.baseL)||10)} L</th><th class="r">In ${fmtDE(tank,1)} L</th></tr></thead><tbody>
+  ${rows.length?rows.map((r,i)=>{const k=String(r.name).trim().toLowerCase(),P=prodPrice(r.name),open=!!U.openPrice[k],u=r.unit==='g'?'g':'ml';
+    return `<tr class="prod-row${open?' open':''}"><td class="ord">${r.i}</td><td><button type="button" class="prod-tog" data-act="priceTog" data-k="${esc(k)}" aria-expanded="${open}"><span class="car" aria-hidden="true">${open?'▾':'▸'}</span><b>${esc(r.name)}</b></button><div class="small" data-fcost="${i}">${isNaN(costs[i])?'<span class="muted">Preis eintragen</span>':`<span class="muted">Kosten</span> <b>${eur(costs[i])}</b>`}</div></td><td class="r num">${r.range[0]===r.range[1]?fmtDE(r.range[0]):`${fmtDE(r.range[0])}–${fmtDE(r.range[1])} → ${fmtDE(r.dose)}`} ${esc(r.unit)}</td><td class="r amt">${fmtAmt(r.amount)} ${esc(r.unit)}</td></tr>
+    ${open?`<tr class="price-edit"><td></td><td colspan="3"><div class="grid2">${fld(`Gebinde (${u})`,`<input data-price="${esc(k)}" data-f="size" value="${esc(isNaN(P.size)?'':String(P.size))}" inputmode="decimal" placeholder="z. B. 1000">`)}${fld('Preis (€)',`<input data-price="${esc(k)}" data-f="price" value="${esc(isNaN(P.price)?'':String(P.price))}" inputmode="decimal" placeholder="z. B. 24,90">`)}</div><p class="small muted" data-psum="${esc(k)}" style="margin-top:6px">${isNaN(P.unit)?`Preis ÷ Gebindegröße = Preis je ${u}`:`${fmtDE(P.price,2)} € ÷ ${fmtDE(P.size,0)} ${u} = ${P.unit.toLocaleString('de-DE',{maximumFractionDigits:4})} € je ${u} · × ${fmtAmt(r.amount)} ${u} = <b>${eur(costs[i])}</b>`}</p></td></tr>`:''}`;}).join(''):'<tr><td colspan="4" class="muted">In dieser Woche kein Dünger.</td></tr>'}
   </tbody></table></div>
-  ${anyC?`<div class="row between" style="margin-top:10px;padding-top:10px;border-top:1px solid var(--line2)"><b>Kosten dieser Mischung</b><span><b class="num">${eur(sumC)}</b>${missC?` <span class="small muted">(${missC} ohne Preis)</span>`:''}</span></div>`:''}
+  <div class="row between" style="margin-top:10px;padding-top:10px;border-top:1px solid var(--line2)" id="fcSum">${feedCostSum(costs)}</div>
   <div class="targets"><div class="tgt"><div class="k">Ziel-EC${plan.ecPlus?'+':''}</div><div class="v">${esc(week.ec||'–')}</div></div><div class="tgt"><div class="k">Ziel-pH</div><div class="v">${esc(week.ph||'–')}</div></div></div>
   ${plan.ecPlus?'<p class="note" style="margin-top:8px">EC+ heißt: zusätzlich zum EC deines Leitungswassers.</p>':''}
   ${waterLine(plan,week)}${plan.note?`<p class="note" style="margin-top:12px">${esc(plan.note)}</p>`:''}`;
@@ -888,10 +895,21 @@ const round2=n=>Math.round((n+Number.EPSILON)*100)/100;
 function prodPrice(name){const pr=getSet('prices',{})[String(name).trim().toLowerCase()]||{};const size=parseNum(pr.size),price=parseNum(pr.price);return {size,price,unit:size>0&&price>=0?price/size:NaN};}
 const prodCost=(name,amount)=>{const u=prodPrice(name).unit;return isNaN(u)||isNaN(parseNum(amount))?NaN:round2(u*parseNum(amount));};
 function priceSummary(p){const P=prodPrice(p.name),u=p.unit==='g'?'g':'ml';return isNaN(P.unit)?'<span class="chip w">Preis fehlt</span>':`<span class="small muted num">${fmtDE(P.price,2)} € / ${fmtDE(P.size,0)} ${u} = ${P.unit.toLocaleString('de-DE',{maximumFractionDigits:4})} €/${u}</span>`;}
+function feedCostSum(costs){const any=costs.some(c=>!isNaN(c)),sum=costs.reduce((a,c)=>a+(isNaN(c)?0:c),0),miss=costs.filter(c=>isNaN(c)).length;
+  return any?`<b>Kosten dieser Mischung</b><span><b class="num">${eur(sum)}</b>${miss?` <span class="small muted">(${miss} ohne Preis)</span>`:''}</span>`:`<span class="small muted">Tippe ein Produkt an, um Gebindegröße und Preis einzutragen – dann rechnet der Feed-Rechner die Kosten jeder Mischung.</span>`;}
+/* Nach Preiseingabe nur Kostenzahlen aktualisieren (Eingabefelder bleiben stehen, Fokus geht nicht verloren) */
+function updateFeedCosts(){
+  const plan=curPlan(),week=plan&&plan.weeks.find(w=>w.id===U.weekId),tank=parseNum(U.tankL);if(!week||!(tank>0))return;
+  const rows=feedCalc(plan,week,tank,U.pos),costs=rows.map(r=>prodCost(r.name,r.amount));
+  rows.forEach((r,i)=>{const c=$(`[data-fcost="${i}"]`);if(c)c.innerHTML=isNaN(costs[i])?'<span class="muted">Preis eintragen</span>':`<span class="muted">Kosten</span> <b>${eur(costs[i])}</b>`;
+    const k=String(r.name).trim().toLowerCase(),ps=$(`[data-psum="${CSS.escape(k)}"]`),P=prodPrice(r.name),u=r.unit==='g'?'g':'ml';
+    if(ps)ps.innerHTML=isNaN(P.unit)?`Preis ÷ Gebindegröße = Preis je ${u}`:`${fmtDE(P.price,2)} € ÷ ${fmtDE(P.size,0)} ${u} = ${P.unit.toLocaleString('de-DE',{maximumFractionDigits:4})} € je ${u} · × ${fmtAmt(r.amount)} ${u} = <b>${eur(costs[i])}</b>`;});
+  const sm=$('#fcSum');if(sm)sm.innerHTML=feedCostSum(costs);
+}
 function priceSection(plan){
   if(!plan||!plan.products.length)return '';
   U.openPrice=U.openPrice||{};
-  return `<section><div class="sec-h"><span class="sec">Preise der Produkte</span></div><div class="card"><div class="list">${plan.products.map(p=>{const k=String(p.name).trim().toLowerCase(),P=prodPrice(p.name),u=p.unit==='g'?'g':'ml';return `<details class="li price-row" data-pk="${esc(k)}" ${U.openPrice[k]?'open':''}><summary><b>${esc(p.name)}</b><span id="ps_${esc(slug(k))}">${priceSummary(p)}</span></summary><div class="grid2" style="margin-top:10px">${fld(`Gebindegröße (${u})`,`<input data-price="${esc(k)}" data-f="size" value="${esc(isNaN(P.size)?'':String(P.size))}" inputmode="decimal" placeholder="z. B. 1000">`)}${fld('Preis (€)',`<input data-price="${esc(k)}" data-f="price" value="${esc(isNaN(P.price)?'':String(P.price))}" inputmode="decimal" placeholder="z. B. 24,90">`)}</div></details>`;}).join('')}</div>
+  return `<section><div class="sec-h"><span class="sec">Preise der Produkte</span></div><div class="card"><div class="list">${plan.products.map(p=>{const k=String(p.name).trim().toLowerCase(),P=prodPrice(p.name),u=p.unit==='g'?'g':'ml';return `<details class="li price-row" data-pk="${esc(k)}" ${U.openPrice[k]?'open':''}><summary><b>${esc(p.name)}</b><span id="ps_${esc(slug(k))}">${priceSummary(p)}</span></summary><div class="grid2" style="margin-top:10px">${fld(`Gebinde (${u})`,`<input data-price="${esc(k)}" data-f="size" value="${esc(isNaN(P.size)?'':String(P.size))}" inputmode="decimal" placeholder="z. B. 1000">`)}${fld('Preis (€)',`<input data-price="${esc(k)}" data-f="price" value="${esc(isNaN(P.price)?'':String(P.price))}" inputmode="decimal" placeholder="z. B. 24,90">`)}</div></details>`;}).join('')}</div>
   <p class="note" style="margin-top:8px">Tippe ein Produkt an und trag Gebindegröße und Preis ein. Preis ÷ Gebindegröße ergibt den Preis je ${plan.products.some(p=>p.unit==='g')?'ml bzw. g':'ml'}, mal Düngemenge die Kosten – auf den Cent gerundet. Preise gelten für alle Pläne mit gleichem Produktnamen.</p></div></section>`;
 }
 function viewPlanEdit(){
@@ -2240,7 +2258,7 @@ function viewSettings(){
 
   <section><div class="sec-h"><span class="sec">Profil löschen</span></div><div class="card stack"><p class="small">Löscht das Profil „${esc(P.name)}“ mit allen Runs, Plänen, Fotos und Videos von diesem Gerät.</p><button class="btn small danger" data-act="profileDel" data-confirm>Profil endgültig löschen</button></div></section>
 
-  <section class="card stack"><span class="sec">Über</span><p class="note">Zeltbuch · Version 10. Herstellerpläne Stand ${LIB_ASOF}. Erinnerungen erscheinen in der App; Push-Benachrichtigungen kommen mit der Android-Version.</p></section>`;
+  <section class="card stack"><span class="sec">Über</span><p class="note">Zeltbuch · Version 11. Herstellerpläne Stand ${LIB_ASOF}. Erinnerungen erscheinen in der App; Push-Benachrichtigungen kommen mit der Android-Version.</p></section>`;
 }
 function importBanner(imp){
   if(imp.pending)return `<div class="banner stack" style="gap:8px"><p><b>${esc(imp.name)}</b> ist mit einem Passwort geschützt.</p><input type="password" id="impPw" placeholder="Backup-Passwort" autocomplete="off"><div class="row"><button class="btn small primary" data-act="importDecrypt">Entschlüsseln</button><button class="btn small ghost" data-act="importCancel">Abbrechen</button></div></div>`;
@@ -2460,6 +2478,7 @@ const A={
   addMediaFor:el=>mediaSheet(null,el.dataset.id),
   newEntry:()=>entrySheet(), addMedia:()=>mediaSheet(), phase:()=>phaseSheet(),
   upCancel:()=>{U.upCancel=true;},
+  priceTog:el=>{U.openPrice=U.openPrice||{};const k=el.dataset.k;U.openPrice[k]=!U.openPrice[k];const o=$('#feedOut');if(o)o.innerHTML=feedOut();if(U.openPrice[k]){const i=$(`#feedOut [data-price="${CSS.escape(k)}"][data-f="size"]`);if(i&&!i.value)i.focus();}},
   pickDel:el=>{const id=el.dataset.id;PICKED[id]=pickedFiles(id).filter((_,i)=>i!==+el.dataset.i);renderPicked(id);},
   mKind:el=>{U.mKind=el.dataset.k;render();},
   jView:el=>{U.jView=el.dataset.v;render();},
@@ -3261,7 +3280,7 @@ document.addEventListener('change',e=>{
   if(el.id==='steerDate'&&el.value){U.steerDate=el.value;render();return;}
   if(el.id==='kwhPrice'){putSet('kwh',el.value.replace(',','.').trim());render();return;}
   if(el.dataset.price!==undefined){const pr={...getSet('prices',{})};const k=el.dataset.price;pr[k]={...(pr[k]||{}),[el.dataset.f]:el.value.replace(',','.').trim()};putSet('prices',pr);
-    if(U.screen==='feed'){const o=$('#feedOut');if(o)o.innerHTML=feedOut();const plan=curPlan(),pp=plan&&plan.products.find(x=>String(x.name).trim().toLowerCase()===k),sp=$('#ps_'+slug(k));if(pp&&sp)sp.innerHTML=priceSummary(pp);}else render();return;}
+    if(U.screen==='feed')updateFeedCosts();else render();return;}
   if(el.dataset.meter!==undefined){const p=byId('plants',el.dataset.meter);if(p){const v=parseNum(el.value);p[el.dataset.f]=isNaN(v)?'':String(v);save('plants',p);render();}return;}
   if(el.id==='tlPlant'){U.tl.plant=el.value;U.tl.i=0;tlStop();renderTl();return;}
   if(el.id==='tlFps'){U.tl.fps=+el.value;const was=U.tl.playing;tlStop();if(was){tlPlay();}return;}
