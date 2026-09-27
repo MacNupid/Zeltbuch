@@ -257,6 +257,11 @@ table.rep tr:last-child th,table.rep tr:last-child td{border-bottom:0}
 .run-row.cur{background:var(--accent-soft);border-radius:12px;margin-inline:-8px;padding-inline:8px;border-top-color:transparent}
 .phase-list .chip{min-width:78px;justify-content:center}
 details summary{cursor:pointer;font-weight:700}
+.price-row{display:block}
+.price-row summary{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;list-style:none}
+.price-row summary::-webkit-details-marker{display:none}
+.price-row summary b::before{content:'▸ ';color:var(--muted)}
+.price-row[open] summary b::before{content:'▾ '}
 .cal .d.today{border:2px solid var(--ink)}
 .cal .d.sel{background:var(--accent-soft);border-color:var(--accent)}
 .cal i,.cal-legend .dot{display:inline-block;width:6px;height:6px;border-radius:50%}
@@ -859,6 +864,7 @@ function viewFeed(){
   ${miss?`<div class="banner stack" style="gap:8px;margin:0"><span>Laut Run bist du in ${miss.ph} Woche ${miss.n}, der Plan endet bei ${miss.ph} ${miss.max}.</span><div class="row"><button class="btn small" data-act="weekFill">${miss.n-miss.max===1?`${miss.ph} ${miss.n}`:`${miss.ph} ${miss.max+1}–${miss.n}`} anlegen</button><span class="small muted">als Kopie von Woche ${miss.max}</span></div></div>`:''}
   <section class="card" id="feedOut">${feedOut()}</section>
   <div class="row"><button class="btn primary grow" data-act="feedSave" ${run?'':'disabled'}>Mischung speichern</button></div>
+  ${priceSection(plan)}
   <section><div class="sec-h"><span class="sec">Letzte Mischungen</span></div>
   <div class="card">${feeds.length?`<div class="list">${feeds.map(f=>`<div class="li"><div class="grow"><div class="t">${esc(f.weekLabel)} · ${fmtDE(f.tankL,1)} L</div><div class="d">${fmtDate(f.at)} ${fmtTime(f.at)} · Soll EC ${esc(f.targetEc||'–')} · Ist EC ${esc(f.measuredEc||'–')} · pH ${esc(f.measuredPh||'–')}${f.note?' · '+esc(f.note):''}</div></div><button class="icon-btn" data-act="del" data-store="feeds" data-id="${f.id}" data-confirm aria-label="Mischung löschen">✕</button></div>`).join('')}</div>`:'<p class="muted">Gespeicherte Mischungen erscheinen hier mit gemessenem EC und pH.</p>'}</div></section>`;
 }
@@ -868,12 +874,25 @@ function feedOut(){
   const tank=parseNum(U.tankL);
   if(isNaN(tank)||tank<=0)return '<p class="muted">Gib die Wassermenge im Tank ein.</p>';
   const rows=feedCalc(plan,week,tank,U.pos);
+  const costs=rows.map(r=>prodCost(r.name,r.amount)),anyC=costs.some(c=>!isNaN(c)),sumC=costs.reduce((a,c)=>a+(isNaN(c)?0:c),0),missC=costs.filter(c=>isNaN(c)).length;
   return `<div class="tbl-wrap"><table><thead><tr><th>#</th><th>Produkt</th><th class="r">Dosis / ${fmtDE(parseNum(plan.baseL)||10)} L</th><th class="r">In ${fmtDE(tank,1)} L</th></tr></thead><tbody>
-  ${rows.length?rows.map(r=>`<tr><td class="ord">${r.i}</td><td><b>${esc(r.name)}</b></td><td class="r num">${r.range[0]===r.range[1]?fmtDE(r.range[0]):`${fmtDE(r.range[0])}–${fmtDE(r.range[1])} → ${fmtDE(r.dose)}`} ${esc(r.unit)}</td><td class="r amt">${fmtAmt(r.amount)} ${esc(r.unit)}</td></tr>`).join(''):'<tr><td colspan="4" class="muted">In dieser Woche kein Dünger.</td></tr>'}
+  ${rows.length?rows.map((r,i)=>`<tr><td class="ord">${r.i}</td><td><b>${esc(r.name)}</b></td><td class="r num">${r.range[0]===r.range[1]?fmtDE(r.range[0]):`${fmtDE(r.range[0])}–${fmtDE(r.range[1])} → ${fmtDE(r.dose)}`} ${esc(r.unit)}</td><td class="r amt">${fmtAmt(r.amount)} ${esc(r.unit)}${anyC?`<div class="small muted" style="font:13px var(--body)">${isNaN(costs[i])?'kein Preis':eur(costs[i])}</div>`:''}</td></tr>`).join(''):'<tr><td colspan="4" class="muted">In dieser Woche kein Dünger.</td></tr>'}
   </tbody></table></div>
+  ${anyC?`<div class="row between" style="margin-top:10px;padding-top:10px;border-top:1px solid var(--line2)"><b>Kosten dieser Mischung</b><span><b class="num">${eur(sumC)}</b>${missC?` <span class="small muted">(${missC} ohne Preis)</span>`:''}</span></div>`:''}
   <div class="targets"><div class="tgt"><div class="k">Ziel-EC${plan.ecPlus?'+':''}</div><div class="v">${esc(week.ec||'–')}</div></div><div class="tgt"><div class="k">Ziel-pH</div><div class="v">${esc(week.ph||'–')}</div></div></div>
   ${plan.ecPlus?'<p class="note" style="margin-top:8px">EC+ heißt: zusätzlich zum EC deines Leitungswassers.</p>':''}
   ${waterLine(plan,week)}${plan.note?`<p class="note" style="margin-top:12px">${esc(plan.note)}</p>`:''}`;
+}
+/* ---------- Düngerpreise: Preis ÷ Gebindegröße = Preis je ml/g; × Menge = Kosten (auf Cent gerundet) ---------- */
+const round2=n=>Math.round((n+Number.EPSILON)*100)/100;
+function prodPrice(name){const pr=getSet('prices',{})[String(name).trim().toLowerCase()]||{};const size=parseNum(pr.size),price=parseNum(pr.price);return {size,price,unit:size>0&&price>=0?price/size:NaN};}
+const prodCost=(name,amount)=>{const u=prodPrice(name).unit;return isNaN(u)||isNaN(parseNum(amount))?NaN:round2(u*parseNum(amount));};
+function priceSummary(p){const P=prodPrice(p.name),u=p.unit==='g'?'g':'ml';return isNaN(P.unit)?'<span class="chip w">Preis fehlt</span>':`<span class="small muted num">${fmtDE(P.price,2)} € / ${fmtDE(P.size,0)} ${u} = ${P.unit.toLocaleString('de-DE',{maximumFractionDigits:4})} €/${u}</span>`;}
+function priceSection(plan){
+  if(!plan||!plan.products.length)return '';
+  U.openPrice=U.openPrice||{};
+  return `<section><div class="sec-h"><span class="sec">Preise der Produkte</span></div><div class="card"><div class="list">${plan.products.map(p=>{const k=String(p.name).trim().toLowerCase(),P=prodPrice(p.name),u=p.unit==='g'?'g':'ml';return `<details class="li price-row" data-pk="${esc(k)}" ${U.openPrice[k]?'open':''}><summary><b>${esc(p.name)}</b><span id="ps_${esc(slug(k))}">${priceSummary(p)}</span></summary><div class="grid2" style="margin-top:10px">${fld(`Gebindegröße (${u})`,`<input data-price="${esc(k)}" data-f="size" value="${esc(isNaN(P.size)?'':String(P.size))}" inputmode="decimal" placeholder="z. B. 1000">`)}${fld('Preis (€)',`<input data-price="${esc(k)}" data-f="price" value="${esc(isNaN(P.price)?'':String(P.price))}" inputmode="decimal" placeholder="z. B. 24,90">`)}</div></details>`;}).join('')}</div>
+  <p class="note" style="margin-top:8px">Tippe ein Produkt an und trag Gebindegröße und Preis ein. Preis ÷ Gebindegröße ergibt den Preis je ${plan.products.some(p=>p.unit==='g')?'ml bzw. g':'ml'}, mal Düngemenge die Kosten – auf den Cent gerundet. Preise gelten für alle Pläne mit gleichem Produktnamen.</p></div></section>`;
 }
 function viewPlanEdit(){
   const plan=curPlan();
@@ -911,14 +930,15 @@ function taskDates(t,from,to){
   return out;
 }
 function entryHtml(e){
-  return `<div class="entry"><div class="grow stack" style="gap:6px"><div class="row"><span class="chip ${ENTRY_CHIP[e.type]??'n'}">${esc(e.type)}</span>${e.plantId?`<span class="small muted">${esc(plantName(e.plantId))}</span>`:''}</div>${e.tri?`${triBar(e.tri)}<span class="small">${triTxt(e.tri)} · ${esc(triHint(e.tri))}</span>`:''}${measTxt(e)}${e.text?`<p>${esc(e.text)}</p>`:''}</div><button class="icon-btn" data-act="del" data-store="entries" data-id="${e.id}" data-confirm aria-label="Eintrag löschen">✕</button></div>`;
+  return `<div class="entry"><div class="grow stack" style="gap:6px"><div class="row"><span class="chip ${ENTRY_CHIP[e.type]??'n'}">${esc(e.type)}</span>${e.plantId?`<span class="chip n">${runDot(byId('runs',byId('plants',e.plantId)?.runId),8)} ${esc(plantName(e.plantId))}</span>`:''}</div>${e.tri?`${triBar(e.tri)}<span class="small">${triTxt(e.tri)} · ${esc(triHint(e.tri))}</span>`:''}${measTxt(e)}${e.text?`<p>${esc(e.text)}</p>`:''}</div><button class="icon-btn" data-act="del" data-store="entries" data-id="${e.id}" data-confirm aria-label="Eintrag löschen">✕</button></div>`;
 }
 function viewJournal(){
   const run=activeRun();if(!run)return needRun();
   const seg=`<div class="seg-ctl" role="group" aria-label="Ansicht">${[['cal','Kalender'],['list','Journal']].map(([k,l])=>`<button type="button" data-act="jView" data-v="${k}" aria-pressed="${U.jView===k}">${l}</button>`).join('')}</div>`;
   const head=`<div class="row between"><span class="sec">${U.jView==='cal'?'Monatsansicht':'Alle Einträge'}</span>${seg}</div>`;
   if(U.jView==='cal')return head+viewCalendar(run);
-  let list=S.entries.filter(e=>e.runId===run.id&&(!U.jType||e.type===U.jType));
+  const rp=runPlants(run);if(U.jPlant&&!rp.some(p=>p.id===U.jPlant))U.jPlant='';
+  let list=S.entries.filter(e=>e.runId===run.id&&(!U.jType||e.type===U.jType)&&(!U.jPlant||e.plantId===U.jPlant||(!e.plantId&&U.jAll)));
   list.sort((a,b)=>(b.date+b.at).localeCompare(a.date+a.at));
   let html='',last=null;
   list.forEach(e=>{
@@ -926,7 +946,8 @@ function viewJournal(){
     html+=entryHtml(e);
   });
   return `${head}<div class="row"><button class="btn small" data-act="trich">Trichom-Check</button><button class="btn primary small" data-act="newEntry">${IC.plus} Eintrag</button></div>
-  ${fld('Filter',selHTML('jType',[['','Alle Einträge'],...ENTRY_TYPES],U.jType,'id="jType"'))}
+  <div class="grid2">${fld('Art',selHTML('jType',[['','Alle Arten'],...ENTRY_TYPES],U.jType,'id="jType"'))}${fld('Strain',selHTML('jPlant',[['','Alle Strains'],...rp.map(p=>[p.id,p.label])],U.jPlant||'','id="jPlant"'))}</div>
+  ${U.jPlant?`<label class="check"><input type="checkbox" id="jAll" ${U.jAll?'checked':''}> Auch Einträge fürs ganze Zelt zeigen</label>`:''}
   <div>${html||'<div class="card empty"><p class="muted">Noch keine Einträge. Halte Gießen, Topping, Probleme oder Beobachtungen fest.</p></div>'}</div>`;
 }
 function viewCalendar(run){
@@ -1034,14 +1055,19 @@ $('#sheetForm').addEventListener('submit',e=>{
   else if(r!==false){closeSheet();render();}
 });
 
+/* Strain-Auswahl: alle Strains laufender Runs, gruppiert nach Run (aktiver Run zuerst) */
+function strainSelect(name,run,val){
+  const runs=[run,...liveRuns().filter(r=>r.id!==run.id)].filter(Boolean);
+  return `<select name="${name}"><option value="">Ganzer Run / Zelt („${esc(run.name)}“)</option>${runs.map(r=>{const pl=runPlants(r);return pl.length?`<optgroup label="${esc(r.name)}">${pl.map(p=>`<option value="${esc(p.id)}" ${p.id===val?'selected':''}>${esc(p.label)}</option>`).join('')}</optgroup>`:'';}).join('')}</select>`;
+}
 function entrySheet(preDate){
   const run=activeRun();if(!run)return toast('Lege zuerst einen Run an');
   openSheet('Journal-Eintrag',
    `<div class="grid2">${fld('Datum',inp('date',preDate||todayISO(),'type="date"'))}${fld('Art',selHTML('type',ENTRY_TYPES.filter(t=>t!=='Trichome'),'Notiz'))}</div>`+
-   fld('Strain',selHTML('plantId',plantOpts(run.id,'Alle / Zelt'),''))+
+   fld('Strain',strainSelect('plantId',run,U.jPlant||(runPlants(run).length===1?runPlants(run)[0].id:'')))+
    fld('Notiz',`<textarea name="text" autofocus placeholder="Was ist passiert?"></textarea>`),
    'Eintrag speichern',
-   d=>{if(!d.date){toast('Datum angeben');return false;}save('entries',{id:uid(),runId:run.id,date:d.date,type:d.type,plantId:d.plantId,text:d.text,at:nowStamp()});toast('Eintrag gespeichert');});
+   d=>{if(!d.date){toast('Datum angeben');return false;}const pl=d.plantId?byId('plants',d.plantId):null;save('entries',{id:uid(),runId:pl?pl.runId:run.id,date:d.date,type:d.type,plantId:d.plantId,text:d.text,at:nowStamp()});toast(pl&&pl.runId!==run.id?`Eintrag bei „${pl.label}“ gespeichert`:'Eintrag gespeichert');});
 }
 function phaseSheet(){
   const run=activeRun();if(!run)return;const I=runInfo(run);
@@ -1752,13 +1778,14 @@ Object.assign(IC,{
   shield:ln('<path d="M12 3l8 3v6c0 4.5-3.4 8-8 9-4.6-1-8-4.5-8-9V6z"/><path d="M9 12l2 2 4-4"/>'),
   video:ln('<rect x="3" y="6" width="13" height="12" rx="2"/><path d="M16 10l5-3v10l-5-3z"/>'),
   tip:ln('<path d="M9 18h6M10 21h4"/><path d="M12 3a6 6 0 0 0-3.5 10.9c.6.44 1 1.1 1 1.9v.2h5v-.2c0-.8.4-1.46 1-1.9A6 6 0 0 0 12 3z"/>'),
+  archive:ln('<rect x="3.5" y="4" width="17" height="5" rx="1.5"/><path d="M5 9v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V9"/><path d="M10 13h4"/>'),
   img:ln('<rect x="3.5" y="4.5" width="17" height="15" rx="3"/><circle cx="9" cy="10" r="1.8"/><path d="M4 17l5-4.5 4 3.5 3-2.5 4 3.5"/>'),
   search:ln('<circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/>')
 });
 
 /* ---------- Grundgerüst ---------- */
 const ROOT=[['home','Start','home'],['calendar','Kalender','cal'],['media','Medien','cam'],['feed','Feed','drop'],['coach','Coach','coach']];
-const TITLES={home:'Zeltbuch',calendar:'Kalender',media:'Fotos & Videos',feed:'Feed-Rechner',coach:'Grow-Coach',tasks:'Aufgaben',plants:'Strains',harvest:'Ernte & Curing',runs:'Runs & Setups',settings:'Einstellungen',steer:'Crop Steering',costs:'Verbrauch & Kosten',strains:'Genetik',tips:'Wissen',article:'Wissen',trichCompare:'Trichom-Vergleich'};
+const TITLES={home:'Zeltbuch',calendar:'Kalender',media:'Fotos & Videos',feed:'Feed-Rechner',coach:'Grow-Coach',tasks:'Aufgaben',plants:'Strains',harvest:'Ernte & Curing',runs:'Runs & Setups',settings:'Einstellungen',steer:'Crop Steering',costs:'Verbrauch & Kosten',strains:'Genetik',archive:'Archiv',tips:'Wissen',article:'Wissen',trichCompare:'Trichom-Vergleich'};
 function render(){
   if(U.locked){$('#top').innerHTML='';$('#main').innerHTML='';$('#nav').innerHTML='';$('#fab').hidden=true;renderLock();return;}
   renderLock();
@@ -1766,7 +1793,7 @@ function render(){
   renderTop(scr,isRoot);
   $('#nav').innerHTML=ROOT.map(([k,l,i])=>`<button data-act="go" data-s="${k}" ${scr===k?'aria-current="page"':''}><span class="ic">${IC[i]}</span><span>${l}</span></button>`).join('');
   const fab=$('#fab');fab.innerHTML=IC.plus;fab.hidden=!(scr==='home'||(activeRun()&&['calendar','media','tasks','plants','steer','harvest','runs'].includes(scr)));
-  const V={home:viewHome,calendar:viewJournal,media:viewMedia,feed:viewFeed,coach:viewCoach,tasks:viewTasks,plants:viewPlants,harvest:viewHarvest,runs:viewRuns,settings:viewSettings,steer:viewSteer,costs:viewCosts,strains:viewStrains,tips:viewTips,article:viewArticle,trichCompare:viewTrichCompare}[scr]||viewHome;
+  const V={home:viewHome,calendar:viewJournal,media:viewMedia,feed:viewFeed,coach:viewCoach,tasks:viewTasks,plants:viewPlants,harvest:viewHarvest,runs:viewRuns,settings:viewSettings,steer:viewSteer,costs:viewCosts,strains:viewStrains,archive:viewArchive,tips:viewTips,article:viewArticle,trichCompare:viewTrichCompare}[scr]||viewHome;
   if(mediaIO)mediaIO.disconnect();
   $('#main').innerHTML=(memOnly?`<div class="banner">Der Browser erlaubt hier keinen dauerhaften Speicher. Deine Eingaben gehen beim Schließen verloren – exportiere vorher ein Backup.</div>`:'')+V();
   hydrateMedia($('#main'));hydrateMedia($('#sheetBody'));
@@ -1856,13 +1883,27 @@ function viewHome(){
   <section><div class="sec-h"><span class="sec">Passend zu ${esc(I.phase)}</span><button class="btn small ghost" data-act="go" data-s="tips">Alle</button></div><div class="btiles">${phasePosts(I).map(postById).filter(Boolean).map((p,i)=>blogTile(p,i===0)).join('')}</div></section>
   <section><div class="sec-h"><span class="sec">Bereiche</span></div>${tilesHtml(run,I)}</section>`;
 }
+/* Archiv: abgeschlossene Grows mit Ergebnis */
+function viewArchive(){
+  const ar=archivedRuns();
+  if(!ar.length)return `<div class="card empty"><span class="illo lg">${illo('Curing')}</span><p class="muted">Noch keine abgeschlossenen Grows. Unter „Ernte & Curing“ legst du einen fertigen Run mit „Abschließen & archivieren“ hier ab – mit allen Strains, Gewichten, Bewertungen, Fotos und dem Journal.</p></div>`;
+  const tot=ar.reduce((s,r)=>{const y=runYield(r).dry;return s+(isNaN(y)?0:y);},0);
+  return `<p class="note">${plural(ar.length,'abgeschlossener Grow','abgeschlossene Grows')}${tot?` · zusammen ${fmtDE(tot,0)} g trocken`:''}</p>
+  ${ar.map(r=>{const Y=runYield(r),pl=runPlants(r),st=byId('setups',r.setupId),I=runInfo(r),C=costCalc(r),bl=I.phases.find(p=>p.type==='Blüte');
+    return `<section class="card stack" style="border-left:5px solid ${esc(runColor(r))}">
+    <div class="row between"><div><b style="font-size:18px">${esc(r.name)}</b><div class="small muted">${fmtDate(r.start)} – ${fmtDate(String(r.archivedAt||todayISO()).slice(0,10))}${st?' · '+esc(st.name):''}${bl?` · ${plural(daysBetween(bl.date,String(r.archivedAt||todayISO()).slice(0,10)),'Blütetag','Blütetage')}`:''}</div></div>${r.harvest?.timing?`<span class="chip ${r.harvest.timing==='good'?'':'w'}">${esc(HARVEST_TIMING_L[r.harvest.timing])}</span>`:''}</div>
+    <div class="targets" style="margin-top:0"><div class="tgt"><div class="k">Trocken</div><div class="v">${isNaN(Y.dry)?'–':fmtDE(Y.dry,0)+' g'}</div></div><div class="tgt"><div class="k">g/Strain</div><div class="v">${isNaN(Y.perPlant)?'–':fmtDE(Y.perPlant,1)}</div></div><div class="tgt"><div class="k">g/m²</div><div class="v">${isNaN(Y.perM2)?'–':fmtDE(Y.perM2,0)}</div></div><div class="tgt"><div class="k">Kosten</div><div class="v">${C.total>0?eur(C.total):'–'}</div></div></div>
+    <div class="list">${pl.map(p=>{const rt=avgRating(p.review),d=plantDry(p);return `<button type="button" class="li alert" data-act="plantProfile" data-id="${p.id}"><span class="grow"><b>${esc(p.label)}</b>${p.strain&&p.strain!==p.label?` <span class="small muted">${esc(p.strain)}</span>`:''}<br><span class="small">${!isNaN(d)?fmtDE(d,0)+' g · ':''}${rt?stars(rt)+' '+fmtDE(rt,1):'nicht bewertet'}</span></span><span class="muted" aria-hidden="true">›</span></button>`;}).join('')}</div>
+    <div class="row"><button class="btn small" data-act="activateRun" data-id="${r.id}">Öffnen</button><button class="btn small" data-act="report" data-id="${r.id}">Bericht</button><button class="btn small ghost" data-act="restoreRun" data-id="${r.id}">Wiederherstellen</button></div>
+    </section>`;}).join('')}`;
+}
 /* Alle laufenden Runs auf der Startseite */
 function runsOverview(cur){
   const live=liveRuns(),arch=archivedRuns().length;
   if(!live.length&&!arch)return '';
   return `<section><div class="sec-h"><span class="sec">Deine Runs</span><button class="btn small ghost" data-act="newRun">${IC.plus} Run</button></div><div class="card"><div class="list">${live.map(r=>{
     const J=runInfo(r),e=runEnd(r),tot=e?daysBetween(r.start,e):0,done=tot?Math.min(100,Math.max(0,(J.day-1)/tot*100)):0,Y=runPlants(r).length;
-    return `<button type="button" class="li alert run-row${r.id===cur?.id?' cur':''}" data-act="activateRun" data-id="${r.id}" style="--rc:${esc(runColor(r))}">${runDot(r,12)}<span class="grow stack" style="gap:4px"><span><b>${esc(r.name)}</b>${r.id===cur?.id?' <span class="chip">aktiv</span>':''}</span><span class="small muted">Tag ${J.day} · ${esc(dayLine(J))} · ${plural(Y,'Strain','Strains')}${e?` · Ende ${fmtShort(e)}`:''}</span>${e?`<span class="bar rbar" aria-hidden="true"><i style="width:${done}%;background:${esc(runColor(r))}"></i></span>`:''}</span><span aria-hidden="true" class="muted">›</span></button>`;}).join('')||'<p class="muted">Kein laufender Run.</p>'}</div>${arch?`<button class="btn small ghost" data-act="go" data-s="runs" style="margin-top:8px">Archiv ansehen (${arch})</button>`:''}</div></section>`;
+    return `<button type="button" class="li alert run-row${r.id===cur?.id?' cur':''}" data-act="activateRun" data-id="${r.id}" style="--rc:${esc(runColor(r))}">${runDot(r,12)}<span class="grow stack" style="gap:4px"><span><b>${esc(r.name)}</b>${r.id===cur?.id?' <span class="chip">aktiv</span>':''}</span><span class="small muted">Tag ${J.day} · ${esc(dayLine(J))} · ${plural(Y,'Strain','Strains')}${e?` · Ende ${fmtShort(e)}`:''}</span>${e?`<span class="bar rbar" aria-hidden="true"><i style="width:${done}%;background:${esc(runColor(r))}"></i></span>`:''}</span><span aria-hidden="true" class="muted">›</span></button>`;}).join('')||'<p class="muted">Kein laufender Run.</p>'}</div>${arch?`<button class="btn small ghost" data-act="go" data-s="archive" style="margin-top:8px">Archiv ansehen (${arch})</button>`:''}</div></section>`;
 }
 function topStrainsHtml(){
   const rank=strainRank();if(!rank.length)return '';
@@ -1873,7 +1914,7 @@ function topStrainsHtml(){
 function tilesHtml(run,I){
   const t=(act,s,icon,cls,title,stat,hot)=>`<button class="tile" data-act="${act}"${s?` data-s="${s}"`:''}><span class="ti ${cls}">${IC[icon]}</span><span class="stack" style="gap:3px"><b>${title}</b><span class="s${hot?' hot':''}">${stat}</span></span></button>`;
   const setTiles=`${t('go','runs','layers','n','Runs & Setups',`${plural(liveRuns().length,'Run','Runs')} laufend${archivedRuns().length?` · ${archivedRuns().length} im Archiv`:''}`)}${t('go','settings','gear','n','Einstellungen',profile()?.enc?'Verschlüsselt · Backup':'Profil · Sicherheit · Backup')}`;
-  if(!run)return `<div class="tiles">${t('go','plants','leaf','','Strains',plural(myPlants().length,'Strain','Strains'))}${t('go','feed','drop','b','Feed-Rechner','Düngepläne & Rechner')}${t('go','tips','tip','v','Wissen & Blog',`${allPosts().length} Beiträge`)}${setTiles}</div>`;
+  if(!run)return `<div class="tiles">${t('go','archive','archive','n','Archiv',archivedRuns().length?`${plural(archivedRuns().length,'Grow','Grows')} abgeschlossen`:'Noch leer')}${t('go','plants','leaf','','Strains',plural(myPlants().length,'Strain','Strains'))}${t('go','feed','drop','b','Feed-Rechner','Düngepläne & Rechner')}${t('go','tips','tip','v','Wissen & Blog',`${allPosts().length} Beiträge`)}${setTiles}</div>`;
   const today=todayISO(),ot=openTasks(run),od=ot.filter(x=>x.due<today).length,tdn=ot.filter(x=>x.due===today).length;
   const media=S.photos.filter(p=>p.runId===run.id),nV=media.filter(m=>m.kind==='video').length;
   const lastE=S.entries.filter(e=>e.runId===run.id).sort((a,b)=>(b.date+b.at).localeCompare(a.date+a.at))[0];
@@ -1890,6 +1931,7 @@ function tilesHtml(run,I){
   ${t('go','plants','leaf','','Strains',`${plural(myPlants().length,'Strain','Strains')} insgesamt${act?` · ${act} aktiv`:''}`)}
   ${t('go','strains','dna','v','Genetik',plural(mine('strains').length,'Sorte','Sorten'))}
   ${t('go','harvest','jar','v','Ernte & Curing',hs)}
+  ${t('go','archive','archive','n','Archiv',archivedRuns().length?`${plural(archivedRuns().length,'Grow','Grows')} abgeschlossen`:'Noch leer')}
   ${(()=>{const C=costCalc(run);return t('go','costs','euro','w','Verbrauch & Kosten',C.total>0?`${eur(C.total)} bisher`:'Dünger, Strom, Ausgaben');})()}
   ${t('go','coach','coach','v','Grow-Coach',SAMPLE?'Frag Claude zu deinem Run':'Rat & Analyse')}
   ${t('go','tips','tip','','Wissen & Blog',`${allPosts().length} Beiträge & Sorten`)}
@@ -2198,7 +2240,7 @@ function viewSettings(){
 
   <section><div class="sec-h"><span class="sec">Profil löschen</span></div><div class="card stack"><p class="small">Löscht das Profil „${esc(P.name)}“ mit allen Runs, Plänen, Fotos und Videos von diesem Gerät.</p><button class="btn small danger" data-act="profileDel" data-confirm>Profil endgültig löschen</button></div></section>
 
-  <section class="card stack"><span class="sec">Über</span><p class="note">Zeltbuch · Version 9. Herstellerpläne Stand ${LIB_ASOF}. Erinnerungen erscheinen in der App; Push-Benachrichtigungen kommen mit der Android-Version.</p></section>`;
+  <section class="card stack"><span class="sec">Über</span><p class="note">Zeltbuch · Version 10. Herstellerpläne Stand ${LIB_ASOF}. Erinnerungen erscheinen in der App; Push-Benachrichtigungen kommen mit der Android-Version.</p></section>`;
 }
 function importBanner(imp){
   if(imp.pending)return `<div class="banner stack" style="gap:8px"><p><b>${esc(imp.name)}</b> ist mit einem Passwort geschützt.</p><input type="password" id="impPw" placeholder="Backup-Passwort" autocomplete="off"><div class="row"><button class="btn small primary" data-act="importDecrypt">Entschlüsseln</button><button class="btn small ghost" data-act="importCancel">Abbrechen</button></div></div>`;
@@ -2300,7 +2342,7 @@ function profileMenuSheet(){
 }
 function runSwitchSheet(){
   const run=activeRun(),ar=archivedRuns();
-  openSheet('Run wechseln',`<div class="card"><div class="list">${liveRuns().map(r=>{const J=runInfo(r);return `<button type="button" class="li alert" data-act="activateRun" data-id="${r.id}">${runDot(r,12)}<span class="grow"><b>${esc(r.name)}</b><br><span class="small muted">Tag ${J.day} · ${esc(J.phase)}</span></span>${r.id===run?.id?'<span class="chip">aktiv</span>':''}</button>`;}).join('')||'<p class="muted">Kein laufender Run.</p>'}</div></div>${ar.length?`<button type="button" class="btn small ghost" data-act="go" data-s="runs">Archiv (${ar.length})</button>`:''}<div class="row"><button type="button" class="btn primary" data-act="newRun">${IC.plus} Neuer Run</button><button type="button" class="btn" data-act="go" data-s="runs">Runs verwalten</button></div>`,null,null);
+  openSheet('Run wechseln',`<div class="card"><div class="list">${liveRuns().map(r=>{const J=runInfo(r);return `<button type="button" class="li alert" data-act="activateRun" data-id="${r.id}">${runDot(r,12)}<span class="grow"><b>${esc(r.name)}</b><br><span class="small muted">Tag ${J.day} · ${esc(J.phase)}</span></span>${r.id===run?.id?'<span class="chip">aktiv</span>':''}</button>`;}).join('')||'<p class="muted">Kein laufender Run.</p>'}</div></div>${ar.length?`<button type="button" class="btn small ghost" data-act="go" data-s="archive">Archiv (${ar.length})</button>`:''}<div class="row"><button type="button" class="btn primary" data-act="newRun">${IC.plus} Neuer Run</button><button type="button" class="btn" data-act="go" data-s="runs">Runs verwalten</button></div>`,null,null);
 }
 function quickAddSheet(){
   const q=(act,s,icon,label,d)=>`<button type="button" data-act="${act}"${s?` data-s="${s}"`:''}${d?` data-d="${d}"`:''}><span class="ti">${IC[icon]}</span>${label}</button>`;
@@ -2516,6 +2558,8 @@ document.addEventListener('change',async e=>{
   if(el.id==='fPlan'||el.id==='ePlan'){U.planId=el.value;U.weekPlan=null;render();return;}
   if(el.id==='fWeek'){U.weekId=el.value;$('#feedOut').innerHTML=feedOut();return;}
   if(el.id==='jType'){U.jType=el.value;render();return;}
+  if(el.id==='jPlant'){U.jPlant=el.value;render();return;}
+  if(el.id==='jAll'){U.jAll=el.checked;render();return;}
   if(el.id==='calM'){U.calM=+el.value;render();return;}
   if(el.id==='calY'){U.calY=+el.value;render();return;}
   if(el.id==='photoPlant'){U.photoPlant=el.value;render();return;}
@@ -2538,6 +2582,7 @@ document.addEventListener('visibilitychange',()=>{
   if(pickerBusy()){U.hiddenAt=0;return;}
   if(p&&p.enc&&!U.locked&&(p.autoLock??2)>0&&U.hiddenAt&&Date.now()-U.hiddenAt>=(p.autoLock??2)*60000)lockApp('pin');
 });
+document.addEventListener('toggle',e=>{const d=e.target;if(d.dataset&&d.dataset.pk!==undefined){U.openPrice=U.openPrice||{};U.openPrice[d.dataset.pk]=d.open;}},true);
 document.addEventListener('cancel',e=>{if(e.target.type==='file')U.pickerAt=0;},true);
 window.addEventListener('focus',()=>{if(U.pickerAt&&!U.uploading)setTimeout(()=>{if(U.pickerAt&&Date.now()-U.pickerAt>1500)U.pickerAt=0;},4000);});
 /* Drag & Drop und Einfügen (Desktop) */
@@ -2869,49 +2914,49 @@ function feedUsage(run){
   S.feeds.filter(f=>f.runId===run.id).forEach(f=>{n++;water+=parseNum(f.tankL)||0;(f.amounts||[]).forEach(a=>{const k=String(a.name).trim();const m=map[k.toLowerCase()]||(map[k.toLowerCase()]={name:k,unit:a.unit||'ml',amount:0});m.amount+=parseNum(a.amount)||0;});});
   return {items:Object.values(map).sort((a,b)=>b.amount-a.amount),water,n};
 }
+/* Strom je Strain: Endstand − Anfangsstand = Verbrauch (kWh); × Strompreis = Stromkosten */
 function powerUse(run){
-  const st=byId('setups',run.setupId),I=runInfo(run);
-  const meters=S.meters.filter(m=>m.runId===run.id&&!isNaN(parseNum(m.v))).sort((a,b)=>a.date.localeCompare(b.date));
-  if(meters.length>=2){const a=meters[0],b=meters[meters.length-1];return {kwh:Math.max(0,parseNum(b.v)-parseNum(a.v)),measured:true,from:a.date,to:b.date,meters};}
-  const W=parseNum(st?.watt),X=parseNum(st?.extraW)||0;
-  if(!(W>0)&&!(X>0))return {kwh:NaN,measured:false,meters};
-  const hv=parseNum(run.lightVeg)||18,hb=parseNum(run.lightBloom)||12;
-  const end=(I.phases.find(p=>p.type==='Ernte')||{}).date||todayISO();
-  let kwh=0,days=0;
-  for(let d=run.start;d<=end&&days<400;d=addDays(d,1)){days++;const J=runInfo(run,d);const h=J.phaseIdx<=1?hv:J.phaseIdx<=3?hb:0;kwh+=((W>0?W:0)*h+X*24)/1000;}
-  return {kwh,measured:false,days,hv,hb,W,X,meters};
+  const kwhP=parseNum(getSet('kwh','')),pl=runPlants(run);
+  const rows=pl.map(p=>{const a=parseNum(p.mStart),b=parseNum(p.mEnd),kwh=!isNaN(a)&&!isNaN(b)?b-a:NaN;return {p,a,b,kwh,bad:!isNaN(kwh)&&kwh<0,cost:!isNaN(kwh)&&kwh>=0&&!isNaN(kwhP)?round2(kwh*kwhP):NaN};});
+  const ok=rows.filter(r=>!isNaN(r.kwh)&&!r.bad);
+  let kwh=ok.length?ok.reduce((s,r)=>s+r.kwh,0):NaN,legacy=null;
+  if(!ok.length){const m=S.meters.filter(x=>x.runId===run.id&&!isNaN(parseNum(x.v))).sort((a,b)=>a.date.localeCompare(b.date));if(m.length>=2){kwh=Math.max(0,parseNum(m[m.length-1].v)-parseNum(m[0].v));legacy={from:m[0].date,to:m[m.length-1].date};}}
+  return {rows,kwh,kwhP,legacy,cost:!isNaN(kwh)&&!isNaN(kwhP)?(ok.length?ok.reduce((s,r)=>s+(isNaN(r.cost)?0:r.cost),0):round2(kwh*kwhP)):NaN};
 }
 function costCalc(run){
-  const prices=getSet('prices',{}),kwhP=parseNum(getSet('kwh',''));
+  const prices=getSet('prices',{});
   const U1=feedUsage(run);let fert=0,fertKnown=true;
-  U1.items.forEach(it=>{const p=prices[it.name.toLowerCase()];const size=parseNum(p?.size),price=parseNum(p?.price);if(size>0&&price>=0&&!isNaN(price)){it.cost=it.amount/size*price;fert+=it.cost;}else fertKnown=false;});
-  const pw=powerUse(run);const power=!isNaN(pw.kwh)&&kwhP>=0&&!isNaN(kwhP)?pw.kwh*kwhP:NaN;
+  U1.items.forEach(it=>{it.cost=0;it.known=true;});
+  /* je gespeicherter Mischung und Produkt auf Cent gerundet, dann summiert */
+  S.feeds.filter(f=>f.runId===run.id).forEach(f=>(f.amounts||[]).forEach(a=>{const it=U1.items.find(x=>x.name.toLowerCase()===String(a.name).trim().toLowerCase());const c=prodCost(a.name,a.amount);if(isNaN(c)){if(it)it.known=false;fertKnown=false;}else{if(it)it.cost+=c;fert+=c;}}));
+  U1.items.forEach(it=>{if(!it.known&&!it.cost)it.cost=undefined;});
+  fert=round2(fert);
+  const pw=powerUse(run),power=pw.cost;
   const ex=S.expenses.filter(e=>e.runId===run.id).sort((a,b)=>String(b.date).localeCompare(String(a.date)));const exSum=ex.reduce((s,e)=>s+(parseNum(e.amount)||0),0);
   const dry=runYield(run).dry;
-  const total=fert+(isNaN(power)?0:power)+exSum;
-  return {usage:U1,fert,fertKnown,pw,power,kwhP,ex,exSum,total,dry,perG:dry>0&&total>0?total/dry:NaN,prices};
+  const total=round2(fert+(isNaN(power)?0:power)+exSum);
+  return {usage:U1,fert,fertKnown,pw,power,kwhP:pw.kwhP,ex,exSum,total,dry,perG:dry>0&&total>0?total/dry:NaN,prices};
 }
 const eur=n=>isNaN(n)?'–':Number(n).toLocaleString('de-DE',{style:'currency',currency:'EUR'});
 function viewCosts(){
   const run=activeRun();if(!run)return needRun();
-  const C=costCalc(run),st=byId('setups',run.setupId);
+  const C=costCalc(run),P=C.pw;
   return `<section class="card stack"><div class="row between"><span class="sec">Summe dieses Runs</span><span class="chip n">${plural(C.usage.n,'Mischung','Mischungen')}</span></div>
   <div class="targets" style="margin-top:0"><div class="tgt"><div class="k">Gesamt</div><div class="v">${eur(C.total)}</div></div><div class="tgt"><div class="k">pro Gramm</div><div class="v">${isNaN(C.perG)?'–':eur(C.perG)}</div></div></div>
   <p class="note">Dünger ${eur(C.fert)}${C.fertKnown?'':' (ohne Produkte ohne Preis)'} · Strom ${eur(C.power)} · Sonstiges ${eur(C.exSum)}${isNaN(C.dry)?' · Kosten pro Gramm erscheinen, sobald das Trockengewicht eingetragen ist':''}</p></section>
 
-  <section><div class="sec-h"><span class="sec">Dünger-Verbrauch</span></div><div class="card stack">
-  <p class="note">Aus deinen gespeicherten Mischungen – es zählen die Mengen, die du beim Speichern eingetragen hast, nicht die Planwerte. Preis: Gebindegröße und Preis eintragen.</p>
-  ${C.usage.items.length?`<div>${C.usage.items.map(it=>{const k=esc(it.name.toLowerCase()),p=C.prices[it.name.toLowerCase()]||{},u=it.unit==='g'?'g':'ml';return `<div class="li" style="display:block"><div style="display:flex;justify-content:space-between;gap:10px;align-items:baseline"><b>${esc(it.name)}</b><span class="num" style="white-space:nowrap">${fmtAmt(it.amount)} ${esc(it.unit)} · <b>${it.cost!==undefined?eur(it.cost):'–'}</b></span></div><div class="grid2" style="margin-top:8px">${fld('Gebinde ('+u+')',`<input data-price="${k}" data-f="size" value="${esc(p.size||'')}" inputmode="decimal" placeholder="z. B. 1000">`)}${fld('Preis (€)',`<input data-price="${k}" data-f="price" value="${esc(p.price||'')}" inputmode="decimal" placeholder="z. B. 20">`)}</div></div>`;}).join('')}</div>`:'<p class="muted">Noch keine Mischungen gespeichert. Im Feed-Rechner auf „Mischung speichern“ tippen.</p>'}
-  <p class="small">Wasser gesamt: <b>${fmtDE(C.usage.water,1)} L</b></p></div></section>
-
-  <section><div class="sec-h"><span class="sec">Strom</span><button class="btn small" data-act="meterAdd">${IC.plus} Zählerstand</button></div><div class="card stack">
-  ${C.pw.measured?`<p><b>${fmtDE(C.pw.kwh,1)} kWh</b> gemessen <span class="muted small">(${fmtShort(C.pw.from)}–${fmtShort(C.pw.to)}, aus deinen Zählerständen)</span></p>`
-  :!isNaN(C.pw.kwh)?`<p><b>${fmtDE(C.pw.kwh,0)} kWh</b> geschätzt <span class="muted small">(Licht ${fmtDE(C.pw.W||0,0)} W × ${C.pw.hv} h Veg / ${C.pw.hb} h Blüte${C.pw.X?` + ${fmtDE(C.pw.X,0)} W Dauerbetrieb`:''}, ${plural(C.pw.days,'Tag','Tage')})</span></p><p class="note">Genauer wird es mit mindestens zwei Zählerständen, z. B. an einem Zwischenzähler an der Steckdosenleiste.</p>`
-  :`<p class="note">Trag im Setup die Lampenleistung ein (und optional weitere Geräte) oder erfasse Zählerstände.</p>`}
+  <section><div class="sec-h"><span class="sec">Strom</span></div><div class="card stack">
   ${fld('Strompreis (€ pro kWh)',`<input id="kwhPrice" value="${esc(getSet('kwh',''))}" inputmode="decimal" placeholder="z. B. 0,35">`)}
-  ${C.pw.meters.length?`<div class="list">${C.pw.meters.map(m=>`<div class="li" style="align-items:center"><span class="small num" style="width:52px">${fmtShort(m.date)}</span><span class="grow num">${esc(m.v)} kWh</span><button class="icon-btn" data-act="del" data-store="meters" data-id="${m.id}" data-confirm aria-label="Löschen">✕</button></div>`).join('')}</div>`:''}
-  ${!C.pw.measured&&st?`<button class="btn small ghost" data-act="editSetup" data-id="${st.id}">Leistung im Setup ändern</button>`:''}
+  ${P.rows.map(r=>`<div class="stack" style="gap:8px;border-top:1px solid var(--line);padding-top:12px"><div class="row between"><b>${esc(r.p.label)}</b><span class="num">${r.bad?'<span class="chip b">Endstand kleiner als Anfangsstand</span>':isNaN(r.kwh)?'<span class="small muted">Stände eintragen</span>':`${fmtDE(r.kwh,1)} kWh · <b>${eur(r.cost)}</b>`}</span></div>
+  <div class="grid2">${fld('Anfangsstand',`<input data-meter="${r.p.id}" data-f="mStart" value="${esc(r.p.mStart??'')}" inputmode="decimal" placeholder="kWh, z. B. 12345,6">`)}${fld('Endstand',`<input data-meter="${r.p.id}" data-f="mEnd" value="${esc(r.p.mEnd??'')}" inputmode="decimal" placeholder="kWh, bei Ernte">`)}</div></div>`).join('')||'<p class="muted">Noch kein Strain in diesem Run.</p>'}
+  <p class="note">Endstand − Anfangsstand = Verbrauch. Verbrauch × Strompreis = Stromkosten. Am genauesten mit einem eigenen Zwischenzähler je Zelt. Teilen sich mehrere Strains einen Zähler, trag die Stände nur bei einem ein.</p>
+  ${P.legacy&&!P.rows.some(r=>!isNaN(r.kwh))?`<p class="small">Aus früheren Zählerständen: <b>${fmtDE(P.kwh,1)} kWh</b> (${fmtShort(P.legacy.from)}–${fmtShort(P.legacy.to)}).</p>`:''}
   </div></section>
+
+  <section><div class="sec-h"><span class="sec">Dünger</span><button class="btn small ghost" data-act="go" data-s="feed">Preise im Feed</button></div><div class="card stack">
+  ${C.usage.items.length?`<div class="list">${C.usage.items.map(it=>`<div class="li" style="align-items:baseline"><b class="grow">${esc(it.name)}</b><span class="num" style="white-space:nowrap">${fmtAmt(it.amount)} ${esc(it.unit)} · <b>${it.cost!==undefined?eur(it.cost):'Preis fehlt'}</b></span></div>`).join('')}</div>`:'<p class="muted">Noch keine Mischungen gespeichert. Im Feed-Rechner auf „Mischung speichern“ tippen.</p>'}
+  <p class="note">Es zählen die tatsächlich gespeicherten Mengen. Gebindegröße und Preis pflegst du im Feed-Rechner unter „Preise der Produkte“.</p>
+  <p class="small">Wasser gesamt: <b>${fmtDE(C.usage.water,1)} L</b></p></div></section>
 
   <section><div class="sec-h"><span class="sec">Sonstige Ausgaben</span><button class="btn small" data-act="expAdd">${IC.plus} Ausgabe</button></div><div class="card">
   ${C.ex.length?`<div class="list">${C.ex.map(e=>`<div class="li" style="align-items:center"><div class="grow"><div class="t">${esc(e.name)}</div><div class="d">${fmtDate(e.date)}${e.cat?' · '+esc(e.cat):''}</div></div><b class="num">${eur(parseNum(e.amount))}</b><button class="icon-btn" data-act="del" data-store="expenses" data-id="${e.id}" data-confirm aria-label="Löschen">✕</button></div>`).join('')}</div>`:'<p class="muted">Samen, Erde, Filter, Ersatzteile – alles, was du diesem Run zuordnen willst.</p>'}
@@ -3215,7 +3260,9 @@ document.addEventListener('change',e=>{
   if(el.id==='runSetupSel'){const b=$('#runNewSetup');if(b)b.hidden=el.value!=='__new';return;}
   if(el.id==='steerDate'&&el.value){U.steerDate=el.value;render();return;}
   if(el.id==='kwhPrice'){putSet('kwh',el.value.replace(',','.').trim());render();return;}
-  if(el.dataset.price!==undefined){const pr={...getSet('prices',{})};const k=el.dataset.price;pr[k]={...(pr[k]||{}),[el.dataset.f]:el.value.replace(',','.').trim()};putSet('prices',pr);render();return;}
+  if(el.dataset.price!==undefined){const pr={...getSet('prices',{})};const k=el.dataset.price;pr[k]={...(pr[k]||{}),[el.dataset.f]:el.value.replace(',','.').trim()};putSet('prices',pr);
+    if(U.screen==='feed'){const o=$('#feedOut');if(o)o.innerHTML=feedOut();const plan=curPlan(),pp=plan&&plan.products.find(x=>String(x.name).trim().toLowerCase()===k),sp=$('#ps_'+slug(k));if(pp&&sp)sp.innerHTML=priceSummary(pp);}else render();return;}
+  if(el.dataset.meter!==undefined){const p=byId('plants',el.dataset.meter);if(p){const v=parseNum(el.value);p[el.dataset.f]=isNaN(v)?'':String(v);save('plants',p);render();}return;}
   if(el.id==='tlPlant'){U.tl.plant=el.value;U.tl.i=0;tlStop();renderTl();return;}
   if(el.id==='tlFps'){U.tl.fps=+el.value;const was=U.tl.playing;tlStop();if(was){tlPlay();}return;}
 });

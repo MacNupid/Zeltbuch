@@ -1,7 +1,7 @@
 /* Zeltbuch Service Worker: App startet schneller und funktioniert offline.
    Seite: zuerst Netz (immer aktuell), bei Funkloch aus dem Cache. Eigene Dateien & Schriften: aus dem Cache, im Hintergrund aktualisiert.
    Supabase-Anfragen und Unsplash-Bilder laufen am Service Worker vorbei. */
-const V='zeltbuch-v9';
+const V='zeltbuch-v10';
 const CORE=['./','index.html','manifest.json','icon-192.png','icon-512.png','icon-512-maskable.png','vendor/supabase-2.117.2.js'];
 self.addEventListener('install',e=>{e.waitUntil(caches.open(V).then(c=>c.addAll(CORE)).then(()=>self.skipWaiting()));});
 self.addEventListener('activate',e=>{e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k!==V).map(k=>caches.delete(k)))).then(()=>self.clients.claim()));});
