@@ -71,7 +71,7 @@ main{display:flex;flex-direction:column;gap:20px}
 .top{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:var(--bg);display:flex;align-items:center;gap:10px;padding-block:12px 10px}
 .top .ttl{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
 .brand{font:31px/1 var(--tag);color:var(--ink);align-self:flex-start;padding:0 4px;margin-left:-4px;background:linear-gradient(transparent 58%,var(--lime) 58%,var(--lime) 92%,transparent 92%)}
-.page-t{font:29px/1.05 var(--tag);color:var(--ink);overflow-wrap:anywhere}
+.page-t{font:29px/1.25 var(--tag);padding-top:2px;color:var(--ink);overflow-wrap:anywhere}
 .run-sub{border:0;background:none;padding:0;color:var(--muted);font:14px var(--body);text-align:left;display:inline-flex;align-items:center;gap:4px;max-width:100%;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
 .back{width:40px;height:40px;border-radius:12px;border:1px solid var(--line);background:var(--surface);display:grid;place-items:center;flex:none;color:var(--ink)}
 .avatar-btn{border:0;background:none;padding:0;display:inline-flex;flex:none;border-radius:50%}
@@ -235,19 +235,28 @@ table.rep tr:last-child th,table.rep tr:last-child td{border-bottom:0}
 /* calendar */
 .cal-head{display:flex;align-items:center;gap:4px}
 .cal-head .icon-btn{width:36px}
-.cal-head select{width:auto;min-height:40px;padding:6px 6px;min-width:0}
+.cal-head select{width:auto;min-height:40px;padding:6px 4px;min-width:0;font-size:15px}
 .cal-head #calM{flex:1 1 128px} .cal-head #calY{flex:0 0 82px}
 .cal-head .btn.small{padding:0 8px}
 .cal-card{padding:10px}
 .cal{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px}
 .cal .wd{font:700 12px var(--body);color:var(--muted);text-align:center;padding-bottom:2px}
-.cal .d{position:relative;aspect-ratio:1/1.16;border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:3px 4px 7px;display:flex;flex-direction:column;justify-content:space-between;align-items:flex-start;text-align:left;color:var(--ink);overflow:hidden;min-width:0}
+.cal .d{position:relative;aspect-ratio:1/1.16;border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:3px 4px 12px;display:flex;flex-direction:column;justify-content:space-between;align-items:flex-start;text-align:left;color:var(--ink);overflow:hidden;min-width:0}
 .cal .d .n{font:700 14px/1.1 var(--body);font-variant-numeric:tabular-nums}
 .cal .d .rd{position:absolute;top:4px;right:4px;font:9px/1 var(--mono);color:var(--muted)}
 .cal .d .mk{position:absolute;top:16px;right:4px;font-size:10px;line-height:1;color:var(--warn)}
 .cal .d .dots{display:flex;gap:2px;flex-wrap:wrap;min-height:6px}
-.cal .d::after{content:"";position:absolute;left:0;right:0;bottom:0;height:4px;background:var(--ph,transparent)}
-.cal .d.fut::after{opacity:.35}
+.cal .d .n{display:flex;align-items:center;gap:2px;flex-wrap:wrap}
+.cal .d .n .rdot{box-shadow:0 0 0 1.5px var(--surface)}
+.rbars{position:absolute;left:0;right:0;bottom:0;display:flex;flex-direction:column;gap:1px}
+.cal .rbars i{display:block;width:auto;height:4px;border-radius:0}
+.cal .rbars i:last-child{border-radius:0 0 9px 9px}
+.cal .d.fut .rbars{opacity:.45}
+.rdot{display:inline-block;border-radius:50%;flex:none}
+.run-row .rbar{height:6px}
+.run-row.cur{background:var(--accent-soft);border-radius:12px;margin-inline:-8px;padding-inline:8px;border-top-color:transparent}
+.phase-list .chip{min-width:78px;justify-content:center}
+details summary{cursor:pointer;font-weight:700}
 .cal .d.today{border:2px solid var(--ink)}
 .cal .d.sel{background:var(--accent-soft);border-color:var(--accent)}
 .cal i,.cal-legend .dot{display:inline-block;width:6px;height:6px;border-radius:50%}
@@ -498,7 +507,44 @@ const PCOLORS=['#9BD36B','#F28AB2','#7DB6EA','#F4A259','#F2D36B','#B79CF0'];
 const PID=()=>META.activeProfile;
 const profile=()=>byId('profiles',PID());
 const mine=st=>S[st].filter(x=>x.pid===PID());
-function activeRun(){const id=META.runBy&&META.runBy[PID()];const r=byId('runs',id);if(r&&r.pid===PID())return r;return mine('runs')[0]||null;}
+function activeRun(){const id=META.runBy&&META.runBy[PID()];const r=byId('runs',id);if(r&&r.pid===PID())return r;return liveRuns()[0]||mine('runs')[0]||null;}
+/* ---------- v9: Runs (Farbe, Enddatum, Archiv) & Strains ---------- */
+const RUN_COLORS=['#2B9A5B','#D8457F','#2D7CC8','#E0892A','#8A5CD6','#0F9D9A','#D64534','#A07A3C','#6E9E00','#C2185B'];
+const liveRuns=()=>mine('runs').filter(r=>!r.archived).sort((a,b)=>b.start.localeCompare(a.start));
+const archivedRuns=()=>mine('runs').filter(r=>r.archived).sort((a,b)=>String(b.archivedAt||b.start).localeCompare(String(a.archivedAt||a.start)));
+function runColor(r){if(!r)return RUN_COLORS[0];if(r.color)return r.color;let h=0;for(const c of String(r.id))h=(h*31+c.charCodeAt(0))>>>0;return RUN_COLORS[h%RUN_COLORS.length];}
+function nextRunColor(){const used=new Set(liveRuns().map(runColor));return RUN_COLORS.find(c=>!used.has(c))||RUN_COLORS[mine('runs').length%RUN_COLORS.length];}
+/* Enddatum = Start + Veg-Dauer (Wochen) + Blütedauer (Tage). Fehlt eines davon → kein Enddatum (keine Striche im Kalender). */
+function runEnd(r){const vw=parseNum(r.planVegWeeks),bd=parseNum(r.planBloomDays);if(!(vw>0)||!(bd>0))return null;return addDays(r.start,Math.round(vw*7)+Math.round(bd));}
+const runDot=(r,sz=10)=>`<span class="rdot" style="background:${esc(runColor(r))};width:${sz}px;height:${sz}px" aria-hidden="true"></span>`;
+const runPlants=run=>S.plants.filter(p=>p.runId===run.id);
+const myPlants=()=>S.plants.filter(p=>p.pid===PID()&&byId('runs',p.runId));
+/* Gewichte je Strain (ältere Daten: Trockengewicht in der Bewertung) */
+const plantDry=p=>{const v=parseNum(p.dry);return !isNaN(v)?v:parseNum(p.review?.dry);};
+const plantWet=p=>parseNum(p.wet);
+function runYield(run){
+  const pl=runPlants(run),dr=pl.map(plantDry).filter(v=>!isNaN(v)),wt=pl.map(plantWet).filter(v=>!isNaN(v));
+  const dry=dr.length?dr.reduce((a,b)=>a+b,0):parseNum(run.harvest?.dry),wet=wt.length?wt.reduce((a,b)=>a+b,0):parseNum(run.harvest?.wet);
+  const st=byId('setups',run.setupId),area=st&&parseNum(st.w)>0&&parseNum(st.d)>0?parseNum(st.w)*parseNum(st.d)/10000:null;
+  return {dry,wet,n:pl.length,area,perPlant:!isNaN(dry)&&pl.length?dry/pl.length:NaN,perM2:!isNaN(dry)&&area?dry/area:NaN,watt:st?parseNum(st.watt):NaN};
+}
+/* Eindeutiger Strain-Name: gibt es ihn schon, kommt (MM/JJJJ) dazu */
+function uniquePlantLabel(name,iso){
+  const base=String(name||'Strain').trim().slice(0,60)||'Strain';
+  const taken=new Set(myPlants().map(p=>String(p.label).trim().toLowerCase()));
+  if(!taken.has(base.toLowerCase()))return base;
+  const d=parseD(iso||todayISO());let l=`${base} (${pad(d.getMonth()+1)}/${d.getFullYear()})`;
+  for(let i=2;taken.has(l.toLowerCase());i++)l=`${base} (${pad(d.getMonth()+1)}/${d.getFullYear()}) ${i}`;
+  return l;
+}
+function archiveRun(run){run.archived=true;run.archivedAt=nowStamp();save('runs',run);openTasks(run).forEach(t=>{if(!t.cure){t.done=true;t.doneAt=nowStamp();save('tasks',t);}});if(activeRun()?.id===run.id)setActiveRun(liveRuns()[0]?.id||null);}
+function colorPick(name,val){return `<div class="row" role="radiogroup" aria-label="Farbe">${RUN_COLORS.map(c=>`<label class="swatch"><input type="radio" name="${name}" value="${c}" ${val===c?'checked':''} aria-label="Farbe ${c}"><span style="background:${c}"></span></label>`).join('')}</div>`;}
+const SETUP_KINDS=['Zelt','Growbox','Schrank','Raum','Pool','Gartenhaus','Gewächshaus','Balkon','Garten / Outdoor'];
+const IRRIGATION=['Von Hand (Gießkanne)','Tropfsystem','AutoPot','Wilma','Blumat','Bewässerungscomputer','Ebbe & Flut','DWC / Hydro','Dochtbewässerung'];
+const SUBSTRATES=['Erde','Erde, vorgedüngt','Living Soil','Kokos','Kokos/Perlite 70/30','Steinwolle','Blähton','Hydro (DWC)','Torf-Mix'];
+const dl=(id,opts)=>`<datalist id="${id}">${opts.map(o=>`<option value="${esc(o)}">`).join('')}</datalist>`;
+const setupArea=s=>s&&parseNum(s.w)>0&&parseNum(s.d)>0?parseNum(s.w)*parseNum(s.d)/10000:null;
+const setupLine=s=>[s.kind,s.w&&s.d?`${s.w}×${s.d} cm${setupArea(s)?` (${fmtDE(setupArea(s),2)} m²)`:''}`:'',s.watt?s.watt+' W':'',s.irrigation,s.medium,s.potL?s.potL+' L Topf':''].filter(Boolean).join(' · ');
 function setActiveRun(id){META.runBy=META.runBy||{};META.runBy[PID()]=id;saveMeta();}
 const initials=n=>(String(n||'?').trim().split(/\s+/).map(w=>w[0]).join('').slice(0,2)||'?').toUpperCase();
 const avatar=(p,sz=32)=>`<span class="avatar" style="background:${esc(p?.color||PCOLORS[0])};width:${sz}px;height:${sz}px;font-size:${Math.round(sz*.4)}px">${p?.avatar?`<img src="${esc(p.avatar)}" alt="">`:esc(initials(p?.name))}</span>`;
@@ -703,7 +749,10 @@ const REPEAT=[[0,'einmalig'],[1,'täglich'],[2,'alle 2 Tage'],[3,'alle 3 Tage'],
 const TASK_TPL=[['Gießen','Gießen',2],['Runoff messen','Gießen',1],['Tank mischen','Füttern',7],['Trichome checken','Trichome',3],['Entlauben','Entlauben',0],['Blätter auf Schädlinge prüfen','Notiz',3]];
 const repeatTxt=n=>(REPEAT.find(r=>r[0]===+n)||[0,+n?`alle ${n} Tage`:'einmalig'])[1];
 const openTasks=run=>S.tasks.filter(t=>t.runId===run.id&&!t.done).sort((a,b)=>a.due.localeCompare(b.due));
-function finishTask(t){if(+t.every>0){t.due=addDays(todayISO(),+t.every);}else{t.done=true;t.doneAt=nowStamp();}save('tasks',t);}
+function finishTask(t){
+  if(t.cure){cureAdvance(t);return;}
+  if(+t.every>0){t.due=addDays(todayISO(),+t.every);}else{t.done=true;t.doneAt=nowStamp();}save('tasks',t);
+}
 function completeTask(t){
   if(t.type==='Trichome'){trichSheet(t.id);return;}
   save('entries',{id:uid(),runId:t.runId,date:todayISO(),type:ENTRY_TYPES.includes(t.type)?t.type:'Notiz',plantId:t.plantId||'',text:'Erledigt: '+t.title,at:nowStamp()});
@@ -884,7 +933,7 @@ function viewCalendar(run){
   const y=U.calY,m=U.calM,today=todayISO();
   const first=new Date(y,m,1),dim=new Date(y,m+1,0).getDate(),off=(first.getDay()+6)%7;
   const from=isoOf(first),to=isoOf(new Date(y,m,dim));
-  const map={};const add=(iso,k,x)=>{if(!iso||iso<from||iso>to)return;(map[iso]=map[iso]||{e:0,p:0,f:0,t:0,ev:0})[k]+=1;};
+  const map={};const add=(iso,k)=>{if(!iso||iso<from||iso>to)return;(map[iso]=map[iso]||{e:0,p:0,f:0,t:0,ev:0})[k]+=1;};
   S.entries.forEach(e=>{if(e.runId===run.id)add(e.date,'e');});
   S.photos.forEach(p=>{if(p.runId===run.id)add(p.date,'p');});
   S.feeds.forEach(f=>{if(f.runId===run.id)add(f.at.slice(0,10),'f');});
@@ -894,22 +943,27 @@ function viewCalendar(run){
   if(R.expHarvest&&R.phaseIdx<4)add(R.expHarvest,'ev');
   if(R.expFlip)add(R.expFlip,'ev');
   if(!U.calSel)U.calSel=today;
-  const endRun=(R.phases.find(p=>p.type==='Curing')||{}).date;
+  /* alle Runs dieses Profils, die den Monat berühren (Start-Punkt oder Strich) */
+  const runs=mine('runs').map(r=>({r,end:runEnd(r)})).filter(({r,end})=>r.start<=to&&((end&&end>=from)||(r.start>=from))).sort((a,b)=>a.r.start.localeCompare(b.r.start));
   let cells=WD.map(w=>`<span class="wd">${w}</span>`).join('');
   for(let i=0;i<off;i++)cells+='<span class="blank" aria-hidden="true"></span>';
   for(let d=1;d<=dim;d++){
     const iso=isoOf(new Date(y,m,d)),D=map[iso];
-    let rd='',ph='';
-    if(iso>=run.start){const J=runInfo(run,iso);rd=J.bloomDay?`B${J.bloomDay}`:`T${J.day}`;ph=PH_COLOR[J.phase]||'';if(endRun&&iso>addDays(endRun,30)){rd='';ph='';}}
+    let rd='';
+    if(iso>=run.start){const J=runInfo(run,iso);const e=runEnd(run);if(!e||iso<=e)rd=J.bloomDay?`B${J.bloomDay}`:`T${J.day}`;}
+    const starts=runs.filter(x=>x.r.start===iso),lines=runs.filter(x=>x.end&&iso>=x.r.start&&iso<=x.end);
     const dots=D?`${D.e?'<i class="de"></i>':''}${D.p?'<i class="dp"></i>':''}${D.f?'<i class="df"></i>':''}${D.t?'<i class="dt"></i>':''}`:'';
-    cells+=`<button class="d${iso===today?' today':''}${iso===U.calSel?' sel':''}${iso>today?' fut':''}${ph?' inrun':''}" data-act="calPick" data-d="${iso}"${ph?` style="--ph:${ph}"`:''} aria-label="${fmtDate(iso)}${rd?', '+(rd[0]==='B'?'Blütetag '+rd.slice(1):'Tag '+rd.slice(1)):''}"><span class="n">${d}</span>${rd?`<span class="rd">${rd}</span>`:''}${D&&D.ev?'<span class="mk" aria-hidden="true">★</span>':''}<span class="dots" aria-hidden="true">${dots}</span></button>`;
+    const lbl=[fmtDate(iso),rd?(rd[0]==='B'?'Blütetag '+rd.slice(1):'Tag '+rd.slice(1)):'',...starts.map(x=>'Start '+x.r.name),...lines.filter(x=>x.r.start!==iso).map(x=>x.r.name+' läuft')].filter(Boolean).join(', ');
+    cells+=`<button class="d${iso===today?' today':''}${iso===U.calSel?' sel':''}${iso>today?' fut':''}" data-act="calPick" data-d="${iso}" aria-label="${esc(lbl)}"><span class="n">${d}${starts.map(x=>runDot(x.r,7)).join('')}</span>${rd?`<span class="rd">${rd}</span>`:''}${D&&D.ev?'<span class="mk" aria-hidden="true">★</span>':''}<span class="dots" aria-hidden="true">${dots}</span>${lines.length?`<span class="rbars" aria-hidden="true">${lines.slice(0,4).map(x=>`<i style="background:${esc(runColor(x.r))}"></i>`).join('')}</span>`:''}</button>`;
   }
   const ty=new Date().getFullYear(),sy=+run.start.slice(0,4);
   const years=[...new Set([sy,ty-1,ty,ty+1,ty+2,y])].sort((a,b)=>a-b);
+  const noEnd=runs.filter(x=>!x.end);
   return `<div class="cal-head"><button class="icon-btn" data-act="calNav" data-d="-1" aria-label="Vorheriger Monat">‹</button><select id="calM" aria-label="Monat">${MONTHS.map((n,i)=>`<option value="${i}" ${i===m?'selected':''}>${n}</option>`).join('')}</select><select id="calY" aria-label="Jahr">${years.map(v=>`<option ${v===y?'selected':''}>${v}</option>`).join('')}</select><button class="icon-btn" data-act="calNav" data-d="1" aria-label="Nächster Monat">›</button><button class="btn small ghost" data-act="calToday">Heute</button></div>
   <section class="card cal-card"><div class="cal">${cells}</div>
-  <div class="legend cal-legend"><span><i style="background:#56C23A"></i>Veg</span><span><i style="background:#9B5CFF"></i>Blüte</span><span><i style="background:#FF7A1A"></i>Fade</span><span><i style="background:#8A8A8A"></i>Ernte</span><span class="sep"></span><span><i class="dot de"></i>Journal</span><span><i class="dot dp"></i>Foto</span><span><i class="dot df"></i>Feed</span><span><i class="dot dt"></i>Aufgabe</span><span>★ Termin</span></div>
-  <p class="note" style="margin-top:6px">T = Tag des Runs, B = Blütetag. Zukünftige Tage zeigen die geplante Zählung.</p></section>
+  ${runs.length?`<div class="legend cal-legend" style="margin-top:10px">${runs.map(({r,end})=>`<span>${runDot(r,9)} ${esc(r.name)}${end?` <span class="muted">bis ${fmtShort(end)}</span>`:''}${r.archived?' <span class="muted">(Archiv)</span>':''}</span>`).join('')}</div>`:''}
+  <div class="legend cal-legend"><span><i class="dot de"></i>Journal</span><span><i class="dot dp"></i>Foto</span><span><i class="dot df"></i>Feed</span><span><i class="dot dt"></i>Aufgabe</span><span>★ Termin</span></div>
+  <p class="note" style="margin-top:6px">Punkt = Start eines Runs, Striche = Laufzeit (Start + Veg-Dauer + Blütedauer). T/B-Zählung für „${esc(run.name)}“.${noEnd.length?` Ohne Striche, weil Veg- oder Blütedauer fehlt: ${noEnd.map(x=>esc(x.r.name)).join(', ')}.`:''}</p></section>
   ${dayPanel(run,U.calSel)}`;
 }
 function dayPanel(run,iso){
@@ -921,9 +975,12 @@ function dayPanel(run,iso){
   const ev=[];R.phases.filter(p=>p.date===iso).forEach(p=>ev.push(`${p.type} beginnt`));
   if(R.expHarvest===iso&&R.phaseIdx<4)ev.push('Geplante Ernte');
   if(R.expFlip===iso)ev.push('Geplantes Umstellen auf Blüte');
+  mine('runs').forEach(r=>{if(r.id===run.id)return;const e=runEnd(r);if(r.start===iso)ev.push(`Start ${r.name}`);else if(e&&iso===e)ev.push(`Geplantes Ende ${r.name}`);});
+  const others=mine('runs').filter(r=>{const e=runEnd(r);return e&&iso>=r.start&&iso<=e;});
   const empty=!ev.length&&!ts.length&&!es.length&&!ps.length&&!fs.length;
   return `<section class="card stack day-panel">
   <div><b style="font-size:18px">${fmtDate(iso)}</b><div class="small muted">${I?`Tag ${I.day} · ${esc(I.phase)}${I.bloomDay?` · Blüte Tag ${I.bloomDay}, Woche ${I.bloomWeek}`:I.vegDay?` · Veg Woche ${I.vegWeek}`:''}${iso>todayISO()?' · geplant':''}`:'Vor dem Start dieses Runs'}</div></div>
+  ${others.length?`<div class="row">${others.map(r=>{const J=runInfo(r,iso);return `<span class="chip n">${runDot(r,8)} ${esc(r.name)} · Tag ${J.day} · ${esc(J.phase)}</span>`;}).join('')}</div>`:''}
   ${ev.length?`<div class="row">${ev.map(x=>`<span class="chip v">★ ${esc(x)}</span>`).join('')}</div>`:''}
   ${ts.length?`<div class="list">${ts.map(t=>t.due===iso?taskRow(t):`<div class="li task"><span class="tick" aria-hidden="true">↻</span><div class="grow"><div class="t">${esc(t.title)}</div><div class="d">${esc(repeatTxt(t.every))} · voraussichtlich</div></div></div>`).join('')}</div>`:''}
   ${es.map(entryHtml).join('')}
@@ -981,7 +1038,7 @@ function entrySheet(preDate){
   const run=activeRun();if(!run)return toast('Lege zuerst einen Run an');
   openSheet('Journal-Eintrag',
    `<div class="grid2">${fld('Datum',inp('date',preDate||todayISO(),'type="date"'))}${fld('Art',selHTML('type',ENTRY_TYPES.filter(t=>t!=='Trichome'),'Notiz'))}</div>`+
-   fld('Pflanze',selHTML('plantId',plantOpts(run.id,'Alle / Zelt'),''))+
+   fld('Strain',selHTML('plantId',plantOpts(run.id,'Alle / Zelt'),''))+
    fld('Notiz',`<textarea name="text" autofocus placeholder="Was ist passiert?"></textarea>`),
    'Eintrag speichern',
    d=>{if(!d.date){toast('Datum angeben');return false;}save('entries',{id:uid(),runId:run.id,date:d.date,type:d.type,plantId:d.plantId,text:d.text,at:nowStamp()});toast('Eintrag gespeichert');});
@@ -999,7 +1056,7 @@ function taskSheet(t,preDue){
   openSheet(t?'Aufgabe bearbeiten':'Neue Aufgabe',
    (t?'':`<div class="fld"><span>Vorlagen</span><div class="row">${TASK_TPL.map((x,i)=>`<button type="button" class="btn small" data-act="taskTpl" data-i="${i}">${esc(x[0])}</button>`).join('')}</div></div>`)+
    fld('Aufgabe',inp('title',t?.title||'','required autofocus placeholder="z. B. Gießen"'))+
-   `<div class="grid2">${fld('Art (für das Journal)',selHTML('type',ENTRY_TYPES,t?.type||'Notiz'))}${fld('Pflanze',selHTML('plantId',plantOpts(run.id,'Ganzes Zelt'),t?.plantId||''))}</div>`+
+   `<div class="grid2">${fld('Art (für das Journal)',selHTML('type',ENTRY_TYPES,t?.type||'Notiz'))}${fld('Strain',selHTML('plantId',plantOpts(run.id,'Ganzes Zelt'),t?.plantId||''))}</div>`+
    `<div class="grid2">${fld('Fällig am',inp('due',t?.due||preDue||todayISO(),'type="date"'))}${fld('Wiederholen',selHTML('every',REPEAT,t?.every??0))}</div>`+
    `<p class="note">Erledigte Aufgaben landen automatisch im Journal. Wiederkehrende Aufgaben rücken ab dem Erledigt-Tag weiter.</p>`+
    (t?`<button type="button" class="btn danger" data-act="del" data-store="tasks" data-id="${t.id}" data-confirm>Aufgabe löschen</button>`:''),
@@ -1010,7 +1067,7 @@ function trichSheet(taskId){
   const run=activeRun();if(!run)return toast('Lege zuerst einen Run an');
   const t0={c:10,m:80,a:10};
   openSheet('Trichom-Check',
-   `<div class="grid2">${fld('Datum',inp('date',todayISO(),'type="date"'))}${fld('Pflanze',selHTML('plantId',plantOpts(run.id,'Ganzes Zelt'),''))}</div>`+
+   `<div class="grid2">${fld('Datum',inp('date',todayISO(),'type="date"'))}${fld('Strain',selHTML('plantId',plantOpts(run.id,'Ganzes Zelt'),''))}</div>`+
    [['c','Klar'],['m','Milchig'],['a','Bernstein']].map(([k,l])=>`<label class="fld"><span>${l}: <b id="tv_${k}">${t0[k]}</b> %</span><input type="range" name="${k}" min="0" max="100" step="5" value="${t0[k]}" data-tri="${k}"></label>`).join('')+
    `<div id="triOut">${triPreview(t0)}</div>`+
    fld('Notiz',inp('note','','placeholder="optional, z. B. Lupe 60x, obere Cola"'))+
@@ -1036,48 +1093,51 @@ function trichSheet(taskId){
 }
 function reviewSheet(p){
   const r=p.review||{};
-  openSheet(`Ernte · ${p.label}`,
-   fld('Trockengewicht dieser Pflanze (g)',dec('dry',r.dry??'','autofocus'))+
+  openSheet(`Bewertung · ${p.label}`,
    RATE_KEYS.map(([k,l])=>fld(l,starInput(k,r[k]??0))).join('')+
-   fld('Notiz',`<textarea name="note" placeholder="Geruch, Geschmack, Wirkung, würdest du sie wieder growen?">${esc(r.note||'')}</textarea>`),
+   fld('Notiz',`<textarea name="note" placeholder="Geruch, Geschmack, Wirkung, würdest du sie wieder growen?">${esc(r.note||'')}</textarea>`)+
+   `<p class="note">Die Bewertung fließt in die Rangliste deiner Sorten ein – auch nachdem der Run archiviert ist.</p>`,
    'Bewertung speichern',
-   d=>{p.review={dry:d.dry,note:d.note};RATE_KEYS.forEach(([k])=>p.review[k]=+d[k]||0);save('plants',p);toast('Bewertung gespeichert');});
+   d=>{p.review={...(p.review||{}),note:d.note};RATE_KEYS.forEach(([k])=>p.review[k]=+d[k]||0);if(p.review.dry!==undefined&&p.dry===undefined){p.dry=p.review.dry;}save('plants',p);toast('Bewertung gespeichert');});
+}
+function weighSheet(p){
+  openSheet(`Gewicht · ${p.label}`,
+   `<div class="grid2">${fld('Nassgewicht (g)',dec('wet',p.wet??'','autofocus'))}${fld('Trockengewicht (g)',dec('dry',isNaN(plantDry(p))?'':String(plantDry(p))))}</div><p class="note">Nass direkt nach der Ernte, trocken nach der Trocknung (vor dem Curing). Das Zeltbuch rechnet daraus g/Strain und g/m² des Runs.</p>`,
+   'Speichern',
+   d=>{const w=parseNum(d.wet),dr=parseNum(d.dry);p.wet=isNaN(w)?'':String(w);p.dry=isNaN(dr)?'':String(dr);if(p.review)delete p.review.dry;save('plants',p);toast('Gewicht gespeichert');});
 }
 function runReport(run){
   const I=runInfo(run),st=byId('setups',run.setupId);
   const get=t=>I.phases.find(p=>p.type===t)?.date;
   const veg=get('Veg'),bloom=get('Blüte'),harvest=get('Ernte'),end=harvest||todayISO();
-  const plants=S.plants.filter(p=>p.runId===run.id);
-  const dryPl=plants.map(p=>parseNum(p.review?.dry)).filter(n=>!isNaN(n));
-  const dry=!isNaN(parseNum(run.harvest?.dry))?parseNum(run.harvest.dry):(dryPl.length?dryPl.reduce((a,b)=>a+b,0):NaN);
-  const wet=parseNum(run.harvest?.wet);
-  const area=st&&parseNum(st.w)&&parseNum(st.d)?parseNum(st.w)*parseNum(st.d)/10000:null,watt=st?parseNum(st.watt):NaN;
+  const plants=runPlants(run),Y=runYield(run);
   const feeds=S.feeds.filter(f=>f.runId===run.id),ecs=feeds.map(f=>parseNum(f.measuredEc)).filter(n=>!isNaN(n));
   const nE=S.entries.filter(e=>e.runId===run.id).length,nP=S.photos.filter(p=>p.runId===run.id).length;
   const rows=[
     ['Zeitraum',`${fmtDate(run.start)} – ${harvest?fmtDate(harvest):'läuft'} · ${plural(daysBetween(run.start,end)+1,'Tag','Tage')}`],
+    st?['Setup',setupLine(st)||st.name]:null,
     veg?['Veg',plural(daysBetween(veg,bloom||end),'Tag','Tage')]:null,
     bloom?['Blüte',`${plural(daysBetween(bloom,end)+(harvest?0:1),'Tag','Tage')}${run.planBloomDays?` (geplant ${run.planBloomDays})`:''}`]:null,
-    ['Ertrag trocken',!isNaN(dry)?`${fmtDE(dry,0)} g${!isNaN(wet)&&wet?` · nass ${fmtDE(wet,0)} g (${fmtDE(dry/wet*100,0)} %)`:''}`:'–'],
-    ['g/m²',area&&!isNaN(dry)?fmtDE(dry/area,0):'–'],
-    ['g/Watt',!isNaN(watt)&&watt&&!isNaN(dry)?fmtDE(dry/watt,2):'–'],
+    ['Ertrag trocken',!isNaN(Y.dry)?`${fmtDE(Y.dry,0)} g${!isNaN(Y.wet)&&Y.wet?` · nass ${fmtDE(Y.wet,0)} g (${fmtDE(Y.dry/Y.wet*100,0)} %)`:''}`:'–'],
+    ['g/Strain',isNaN(Y.perPlant)?'–':fmtDE(Y.perPlant,1)],
+    ['g/m²',isNaN(Y.perM2)?'–':fmtDE(Y.perM2,0)],
     ['Mischungen',feeds.length?`${feeds.length}${ecs.length?` · Ø EC ${fmtP(ecs.reduce((a,b)=>a+b,0)/ecs.length,2)}`:''}`:'–'],
     ['Journal / Fotos',`${plural(nE,'Eintrag','Einträge')} · ${plural(nP,'Foto','Fotos')}`]
   ].filter(Boolean);
-  const pl=plants.map(p=>({p,avg:avgRating(p.review),dry:parseNum(p.review?.dry)}));
+  const pl=plants.map(p=>({p,avg:avgRating(p.review),dry:plantDry(p)}));
   return {rows,pl,setup:st,strains:[...new Set(plants.map(p=>p.strain).filter(Boolean))]};
 }
 function reportSheet(id){
   const run=byId('runs',id);if(!run)return;const R=runReport(run);
   openSheet('Run-Bericht',`<h3 style="font-size:20px">${esc(run.name)}</h3>${R.strains.length||R.setup?`<p class="muted">${esc([R.strains.join(', '),R.setup?.name].filter(Boolean).join(' · '))}</p>`:''}
   <div class="card"><table class="rep"><tbody>${R.rows.map(([k,v])=>`<tr><th scope="row">${esc(k)}</th><td>${esc(v)}</td></tr>`).join('')}</tbody></table></div>
-  ${R.pl.length?`<h3 class="sec">Pflanzen</h3><div class="card"><div class="list">${R.pl.map(({p,avg,dry})=>`<div class="li"><div class="grow"><div class="t">${esc(p.label)}${p.strain?' · '+esc(p.strain):''}</div><div class="d">${!isNaN(dry)?fmtDE(dry,0)+' g · ':''}${avg?stars(avg)+' '+fmtDE(avg,1):'nicht bewertet'}${p.review?.note?' · '+esc(p.review.note):''}</div></div></div>`).join('')}</div></div>`:''}
+  ${R.pl.length?`<h3 class="sec">Strains</h3><div class="card"><div class="list">${R.pl.map(({p,avg,dry})=>`<div class="li"><div class="grow"><div class="t">${esc(p.label)}${p.strain?' · '+esc(p.strain):''}</div><div class="d">${!isNaN(dry)?fmtDE(dry,0)+' g · ':''}${avg?stars(avg)+' '+fmtDE(avg,1):'nicht bewertet'}${p.review?.note?' · '+esc(p.review.note):''}</div></div></div>`).join('')}</div></div>`:''}
   <button type="button" class="btn primary" data-act="reportSave" data-id="${run.id}">Bericht speichern (.md)</button>`,null,null);
 }
 function reportMd(run){
   const R=runReport(run);
   let md=`# ${run.name}\n\n${[R.strains.join(', '),R.setup?.name].filter(Boolean).join(' · ')}\n\n| | |\n|---|---|\n`+R.rows.map(([k,v])=>`| ${k} | ${v} |`).join('\n')+'\n';
-  if(R.pl.length)md+='\n## Pflanzen\n\n'+R.pl.map(({p,avg,dry})=>`- **${p.label}**${p.strain?' · '+p.strain:''}: ${!isNaN(dry)?fmtDE(dry,0)+' g, ':''}${avg?fmtDE(avg,1)+'/5':'nicht bewertet'}${p.review?.note?' – '+p.review.note:''}`).join('\n')+'\n';
+  if(R.pl.length)md+='\n## Strains\n\n'+R.pl.map(({p,avg,dry})=>`- **${p.label}**${p.strain?' · '+p.strain:''}: ${!isNaN(dry)?fmtDE(dry,0)+' g, ':''}${avg?fmtDE(avg,1)+'/5':'nicht bewertet'}${p.review?.note?' – '+p.review.note:''}`).join('\n')+'\n';
   return md+`\n_Erstellt mit Zeltbuch am ${fmtDate(todayISO())}_\n`;
 }
 /* ----- Herstellerpläne ----- */
@@ -1117,7 +1177,7 @@ function coachContext(run){
   L.push(`Run "${run.name}": Tag ${I.day}, Phase ${I.phase}${I.bloomDay?`, Blüte Tag ${I.bloomDay} (Woche ${I.bloomWeek})`:''}${I.vegDay?`, Veg Tag ${I.vegDay}`:''}${run.planBloomDays?`, geplante Blütedauer ${run.planBloomDays} Tage`:''}, Medium ${run.medium||st?.medium||'k. A.'}`);
   if(st)L.push('Setup: '+[st.name,st.w&&st.d?`${st.w}x${st.d} cm`:'',st.watt?st.watt+' W':'',st.irrigation,st.potL?st.potL+' L Topf':'',st.tankL?st.tankL+' L Tank':'',st.sensors].filter(Boolean).join(', '));
   const pl=S.plants.filter(p=>p.runId===run.id);
-  if(pl.length)L.push('Pflanzen: '+pl.map(p=>[p.label,p.strain,p.breeder,p.source].filter(Boolean).join(' / ')).join('; '));
+  if(pl.length)L.push('Strains (Pflanzen): '+pl.map(p=>[p.label,p.strain,p.breeder,p.source].filter(Boolean).join(' / ')).join('; '));
   const fd=S.feeds.filter(f=>f.runId===run.id).sort((a,b)=>b.at.localeCompare(a.at)).slice(0,3);
   if(fd.length)L.push('Letzte Mischungen: '+fd.map(f=>`${f.at.replace('T',' ')}: ${f.planName}, ${f.weekLabel}, ${f.tankL} L, ${f.amounts.map(a=>`${a.name} ${fmtAmt(a.amount)} ${a.unit}`).join(', ')}; Soll-EC ${f.targetEc||'-'}, Ist-EC ${f.measuredEc||'-'}, pH ${f.measuredPh||'-'}`).join(' | '));
   const en=S.entries.filter(e=>e.runId===run.id).sort((a,b)=>(b.date+b.at).localeCompare(a.date+a.at)).slice(0,8);
@@ -1282,7 +1342,7 @@ Ursprünglich beschrieben „Indica“ und „Sativa“ Landrassen aus unterschi
 Aroma und Charakter hängen vor allem von der Zusammensetzung der Cannabinoide und Terpene ab – und die variiert selbst innerhalb einer Sorte von Pflanze zu Pflanze (siehe [[phaenos|Phänotypen]]). Das Etikett „Indica“ oder „Sativa“ ist dafür nur ein grober Hinweis.
 
 ## Im Zeltbuch nutzen
-Trag bei deinen Sorten in der Genetik die Blütedauer ein. Das Zeltbuch übernimmt sie beim Anlegen einer Pflanze in den Run und rechnet daraus das Erntefenster.`},
+Trag bei deinen Sorten in der Genetik die Blütedauer ein. Das Zeltbuch übernimmt sie beim Anlegen eines Runs oder Strains und rechnet daraus das Erntefenster.`},
  {id:'sortenwahl',cat:'Samen & Genetik',img:'sortenwahl',title:'Die richtige Sorte für Zelt und Erfahrung',lead:'Höhe, Blütedauer, Geruch und Anfälligkeit – worauf du bei der Sortenwahl achten solltest.',tags:['sorte','sortenwahl','strain','einsteiger'],related:['samen-typen','indica-sativa','autoflower','klima'],
   body:`## Platz und Höhe
 Miss die nutzbare Höhe deines Zelts: Zelthöhe minus Lampe, Aufhängung und Topf. Bleiben weniger als etwa 100 cm, sind kompakte Indica-Hybriden oder [[autoflower|Autoflower]] die sichere Wahl. Stark sativalastige Sorten strecken sich nach dem Umstellen deutlich – das lässt sich mit [[training|LST und Topping]] zähmen, verlangt aber Aufmerksamkeit.
@@ -1317,12 +1377,12 @@ Leg den Run mit Startphase „Keimung“ an und trag die Blütedauer ab Keimung 
 Jeder Samen trägt eine eigene Kombination der Gene seiner Eltern. Pflanzen derselben Sorte können sich deshalb in Wuchs, Aroma, Ertrag und Blütedauer deutlich unterscheiden – das sind die Phänotypen.
 
 ## Pheno-Hunting in drei Schritten
-- Mehrere Samen einer Sorte keimen und jeder Pflanze eine eigene Bezeichnung geben (im Zeltbuch zum Beispiel P1, P2, P3).
+- Mehrere Samen einer Sorte keimen und jeder Pflanze eine eigene Bezeichnung geben (im Zeltbuch als eigenen Strain, zum Beispiel „Blue Ivory P1“).
 - Vor dem Umstellen auf Blüte von jeder Pflanze einen [[stecklinge|Steckling]] nehmen und beschriften.
 - Nach Ernte, [[trocknen|Trocknung]] und [[curing|Curing]] bewerten. Den besten „Keeper“ als [[mutterpflanze|Mutterpflanze]] behalten, die anderen Stecklinge entsorgen.
 
 ## Worauf achten
-Wuchs und Stretch, Schimmelresistenz, Harzproduktion, Aroma nach dem Curing, Ertrag und wie leicht sich die Pflanze pflegen lässt. Nutze dafür die Bewertung je Pflanze unter „Ernte & Curing“ – das Zeltbuch rechnet die Sterne pro Sorte über alle Runs zusammen.`},
+Wuchs und Stretch, Schimmelresistenz, Harzproduktion, Aroma nach dem Curing, Ertrag und wie leicht sich die Pflanze pflegen lässt. Nutze dafür die Bewertung je Strain unter „Ernte & Curing“ – das Zeltbuch rechnet die Sterne pro Sorte über alle Runs zusammen.`},
  {id:'samen-lagern',cat:'Samen & Genetik',img:'lagern',title:'Samen richtig lagern',lead:'Kühl, dunkel, trocken und luftdicht – so bleiben Samen jahrelang keimfähig.',tags:['samen','lagern','keimfähigkeit','aufbewahrung'],related:['keimung','samen-typen','sortenwahl'],
   body:`## Die vier Feinde
 Wärme, Licht, Feuchtigkeit und Sauerstoff lassen Samen altern. Gut gelagert bleiben sie mehrere Jahre keimfähig, schlecht gelagert oft nur wenige Monate.
@@ -1334,7 +1394,7 @@ Wärme, Licht, Feuchtigkeit und Sauerstoff lassen Samen altern. Gut gelagert ble
 - Beschriften: Sorte, Breeder, Kaufdatum.
 
 ## Im Zeltbuch
-Trag den Samenbestand in der Genetik-Bibliothek ein. Beim Anlegen einer Pflanze aus Samen zieht das Zeltbuch automatisch einen Samen ab. Wie du die Samen dann zum Leben erweckst, steht unter [[keimung|Samen keimen]].`},
+Trag den Samenbestand in der Genetik-Bibliothek ein. Beim Anlegen eines Strains aus Samen zieht das Zeltbuch automatisch einen Samen ab. Wie du die Samen dann zum Leben erweckst, steht unter [[keimung|Samen keimen]].`},
  {id:'keimung',cat:'Vermehrung',img:'keimung',title:'Samen zum Keimen bringen',lead:'Mit der Küchenpapier-Methode keimen fast alle Samen innerhalb weniger Tage – so geht’s Schritt für Schritt.',tags:['keimung','samen','germination','sämling'],related:['samen-lagern','samen-typen','licht','giessen'],
   body:`## Küchenpapier-Methode
 Leg die Samen zwischen zwei feuchte (nicht nasse) Küchenpapiere, in eine geschlossene Box, dunkel bei 22–25 °C. Prüfe täglich, ob das Papier noch feucht ist. Nach 1–5 Tagen erscheint eine kleine weiße Wurzel.
@@ -1555,7 +1615,7 @@ Meist 7–14 Tage. Fertig ist die Trocknung, wenn kleine Stiele beim Biegen knac
 Ganze Äste kopfüber aufzuhängen trocknet langsamer und gleichmäßiger. Trockennetze sind platzsparend, trocknen aber schneller – dann eher kühler und feuchter einstellen.
 
 ## Im Zeltbuch
-Unter „Ernte & Curing → Trocknung“ trägst du Gewicht, Temperatur und Luftfeuchte ein. Die App zeigt den Gewichtsverlust gegenüber dem Nassgewicht – bei etwa 70–75 % sind Blüten meist bereit fürs [[curing|Curing]]. Richtwerte fürs Klima: [[klima|Temperatur & Luftfeuchte]].`},
+Unter „Ernte & Curing → Trocknung“ trägst du je Strain Gewicht, Temperatur und Luftfeuchte ein. Die App zeigt den Gewichtsverlust gegenüber dem Nassgewicht – bei etwa 70–75 % sind Blüten meist bereit fürs [[curing|Curing]]. Richtwerte fürs Klima: [[klima|Temperatur & Luftfeuchte]].`},
  {id:'curing',cat:'Ernte & Curing',img:'curing',title:'Curing: Reifen im Glas',lead:'Nach der Trocknung reifen die Blüten im Glas nach – Geschmack und Geruch werden runder.',tags:['curing','glas','burpen','boveda','lagern'],related:['trocknen','ernte','samen-lagern'],
   body:`## Ins Glas
 Füll luftdichte Gläser zu etwa drei Vierteln mit den getrockneten Blüten. Ein kleines Hygrometer im Glas zeigt die Luftfeuchte. Ziel: 58–62 %.
@@ -1570,7 +1630,7 @@ Füll luftdichte Gläser zu etwa drei Vierteln mit den getrockneten Blüten. Ein
 Nach 3–4 Wochen merkst du einen deutlichen Unterschied bei Geruch und Geschmack. Viele Sorten profitieren auch von mehreren Monaten. Kühl und dunkel lagern.
 
 ## Im Zeltbuch
-Unter „Ernte & Curing → Curing“ misst du jedes Glas einzeln. Mit „Lüft-Erinnerungen anlegen“ erinnert dich die App täglich und stellt nach zwei Wochen auf wöchentlich um. Zurück zur [[trocknen|Trocknung]] oder zum [[ernte|Erntezeitpunkt]].`}
+Unter „Ernte & Curing → Curing“ misst du jedes Glas einzeln. Unter „Lüft-Erinnerungen“ startest du für jeden Strain einen Lüft-Plan, der sich Tag für Tag und nach deinen Feuchte-Messungen anpasst. Zurück zur [[trocknen|Trocknung]] oder zum [[ernte|Erntezeitpunkt]].`}
 ];
 /* Sortenporträts aus der Samenbank-Referenz – so steht jede Sorte auch als Beitrag zur Verfügung */
 const strainSlug=n=>'sorte-'+slug(String(n).replace(/\(.*?\)/g,''));
@@ -1698,14 +1758,14 @@ Object.assign(IC,{
 
 /* ---------- Grundgerüst ---------- */
 const ROOT=[['home','Start','home'],['calendar','Kalender','cal'],['media','Medien','cam'],['feed','Feed','drop'],['coach','Coach','coach']];
-const TITLES={home:'Zeltbuch',calendar:'Kalender',media:'Fotos & Videos',feed:'Feed-Rechner',coach:'Grow-Coach',tasks:'Aufgaben',plants:'Pflanzen',harvest:'Ernte & Curing',runs:'Runs & Setups',settings:'Einstellungen',steer:'Crop Steering',costs:'Verbrauch & Kosten',strains:'Genetik',tips:'Wissen',article:'Wissen',trichCompare:'Trichom-Vergleich'};
+const TITLES={home:'Zeltbuch',calendar:'Kalender',media:'Fotos & Videos',feed:'Feed-Rechner',coach:'Grow-Coach',tasks:'Aufgaben',plants:'Strains',harvest:'Ernte & Curing',runs:'Runs & Setups',settings:'Einstellungen',steer:'Crop Steering',costs:'Verbrauch & Kosten',strains:'Genetik',tips:'Wissen',article:'Wissen',trichCompare:'Trichom-Vergleich'};
 function render(){
   if(U.locked){$('#top').innerHTML='';$('#main').innerHTML='';$('#nav').innerHTML='';$('#fab').hidden=true;renderLock();return;}
   renderLock();
   const scr=U.screen,isRoot=ROOT.some(r=>r[0]===scr);
   renderTop(scr,isRoot);
   $('#nav').innerHTML=ROOT.map(([k,l,i])=>`<button data-act="go" data-s="${k}" ${scr===k?'aria-current="page"':''}><span class="ic">${IC[i]}</span><span>${l}</span></button>`).join('');
-  const fab=$('#fab');fab.innerHTML=IC.plus;fab.hidden=!activeRun()||!['home','calendar','media','tasks','plants','steer','harvest'].includes(scr);
+  const fab=$('#fab');fab.innerHTML=IC.plus;fab.hidden=!(scr==='home'||(activeRun()&&['calendar','media','tasks','plants','steer','harvest','runs'].includes(scr)));
   const V={home:viewHome,calendar:viewJournal,media:viewMedia,feed:viewFeed,coach:viewCoach,tasks:viewTasks,plants:viewPlants,harvest:viewHarvest,runs:viewRuns,settings:viewSettings,steer:viewSteer,costs:viewCosts,strains:viewStrains,tips:viewTips,article:viewArticle,trichCompare:viewTrichCompare}[scr]||viewHome;
   if(mediaIO)mediaIO.disconnect();
   $('#main').innerHTML=(memOnly?`<div class="banner">Der Browser erlaubt hier keinen dauerhaften Speicher. Deine Eingaben gehen beim Schließen verloren – exportiere vorher ein Backup.</div>`:'')+V();
@@ -1726,7 +1786,7 @@ function go(s,opt={}){
   try{if(onOverlay||opt.replace){st.d=st0.d||0;history.replaceState(st,'');}else if(!same)history.pushState(st,'');}catch(e){}
 }
 function navBack(){if((hs().d||0)>0&&!hs().sheet&&!hs().ov)history.back();else go('home',{replace:true});}
-const plantOpts=(runId,all='Alle Pflanzen')=>[['',all],...S.plants.filter(p=>p.runId===runId).map(p=>[p.id,p.label+(p.strain?' · '+p.strain:'')])];
+const plantOpts=(runId,all='Alle Strains')=>[['',all],...S.plants.filter(p=>p.runId===runId).map(p=>[p.id,p.label+(p.strain?' · '+p.strain:'')])];
 const fld=(label,inner,cls='')=>`<label class="fld ${cls}"><span>${label}</span>${inner}</label>`;
 const inp=(name,val='',extra='')=>`<input name="${name}" value="${esc(val)}" ${extra}>`;
 const dec=(name,val='',extra='')=>`<input name="${name}" value="${esc(val)}" inputmode="decimal" autocomplete="off" ${extra}>`;
@@ -1777,9 +1837,9 @@ function viewHome(){
   const P=profile(),run=activeRun();
   const hr=new Date().getHours(),greet=hr<11?'Guten Morgen':hr<18?'Hallo':'Guten Abend';
   const head=`<p class="greet">${greet}${P&&P.name!=='Mein Profil'?', '+esc(P.name):''} · ${fmtLong(todayISO())}</p>`;
-  if(!run)return head+(META.profileHint?hintBanner():'')+needRun()+tilesHtml(null,null);
+  if(!run)return head+(META.profileHint?hintBanner():'')+needRun()+runsOverview(null)+tilesHtml(null,null);
   const I=runInfo(run),setup=byId('setups',run.setupId);
-  const due=openTasks(run).filter(t=>t.due<=todayISO());
+  const due=openTasks(run).filter(t=>t.due<=todayISO()).concat(S.tasks.filter(t=>t.cure&&!t.done&&t.runId!==run.id&&t.due<=todayISO()&&byId('runs',t.runId)?.pid===PID()));
   const total=Math.round(parseNum(run.planBloomDays))||0;
   let prog='';
   if(I.bloomDay&&total&&I.phaseIdx<4)prog=`<div class="stack" style="gap:6px;margin-top:14px"><div class="row between small"><span>Blüte Tag ${I.bloomDay} von ${total}</span><span class="muted">${I.harvestLeft>=0?'Ernte '+fmtRel(I.expHarvest):'Ernte überfällig'}</span></div><div class="bar v"><i style="width:${Math.min(100,I.bloomDay/total*100)}%"></i></div></div>`;
@@ -1791,20 +1851,29 @@ function viewHome(){
     <div class="row" style="margin-top:14px"><button class="btn small primary" data-act="phase">Phase wechseln</button><button class="btn small" data-act="editRun" data-id="${run.id}">Run bearbeiten</button></div></section>
   ${alertHtml(alerts(run,I).concat(steerAlerts(run,I)))}
   ${due.length?`<section><div class="sec-h"><span class="sec">Heute fällig</span><button class="btn small ghost" data-act="go" data-s="tasks">Alle</button></div><div class="card"><div class="list">${due.slice(0,4).map(taskRow).join('')}</div></div></section>`:''}
+  ${runsOverview(run)}
   ${topStrainsHtml()}
   <section><div class="sec-h"><span class="sec">Passend zu ${esc(I.phase)}</span><button class="btn small ghost" data-act="go" data-s="tips">Alle</button></div><div class="btiles">${phasePosts(I).map(postById).filter(Boolean).map((p,i)=>blogTile(p,i===0)).join('')}</div></section>
   <section><div class="sec-h"><span class="sec">Bereiche</span></div>${tilesHtml(run,I)}</section>`;
 }
+/* Alle laufenden Runs auf der Startseite */
+function runsOverview(cur){
+  const live=liveRuns(),arch=archivedRuns().length;
+  if(!live.length&&!arch)return '';
+  return `<section><div class="sec-h"><span class="sec">Deine Runs</span><button class="btn small ghost" data-act="newRun">${IC.plus} Run</button></div><div class="card"><div class="list">${live.map(r=>{
+    const J=runInfo(r),e=runEnd(r),tot=e?daysBetween(r.start,e):0,done=tot?Math.min(100,Math.max(0,(J.day-1)/tot*100)):0,Y=runPlants(r).length;
+    return `<button type="button" class="li alert run-row${r.id===cur?.id?' cur':''}" data-act="activateRun" data-id="${r.id}" style="--rc:${esc(runColor(r))}">${runDot(r,12)}<span class="grow stack" style="gap:4px"><span><b>${esc(r.name)}</b>${r.id===cur?.id?' <span class="chip">aktiv</span>':''}</span><span class="small muted">Tag ${J.day} · ${esc(dayLine(J))} · ${plural(Y,'Strain','Strains')}${e?` · Ende ${fmtShort(e)}`:''}</span>${e?`<span class="bar rbar" aria-hidden="true"><i style="width:${done}%;background:${esc(runColor(r))}"></i></span>`:''}</span><span aria-hidden="true" class="muted">›</span></button>`;}).join('')||'<p class="muted">Kein laufender Run.</p>'}</div>${arch?`<button class="btn small ghost" data-act="go" data-s="runs" style="margin-top:8px">Archiv ansehen (${arch})</button>`:''}</div></section>`;
+}
 function topStrainsHtml(){
   const rank=strainRank();if(!rank.length)return '';
   const medal=['🥇','🥈','🥉'];
-  return `<section><div class="sec-h"><span class="sec">Top Sorten</span><button class="btn small ghost" data-act="go" data-s="strains">Alle</button></div>
-  <div class="card"><div class="list">${rank.slice(0,3).map((x,i)=>`<button type="button" class="li" data-act="strainEdit" data-id="${x.s.id}" style="align-items:center;width:100%;text-align:left;background:none;border:0"><span style="font-size:20px">${medal[i]}</span><span class="grow" style="margin-left:8px"><b>${esc(x.s.name)}</b><br><span class="small muted">${stars(x.h.rating)} ${fmtDE(x.h.rating,1)}</span></span></button>`).join('')}</div></div></section>`;
+  return `<section><div class="sec-h"><span class="sec">Top Sorten</span><button class="btn small ghost" data-act="go" data-s="plants">Alle Strains</button></div>
+  <div class="card"><div class="list">${rank.slice(0,3).map((x,i)=>`<button type="button" class="li alert" ${x.s?`data-act="strainEdit" data-id="${x.s.id}"`:`data-act="plantProfile" data-id="${x.pl[0].id}"`}><span style="font-size:20px">${medal[i]}</span><span class="grow" style="margin-left:8px"><b>${esc(x.name)}</b><br><span class="small muted">${stars(x.h.rating)} ${fmtDE(x.h.rating,1)} · ${plural(x.h.n,'Bewertung','Bewertungen')}</span></span></button>`).join('')}</div></div></section>`;
 }
 function tilesHtml(run,I){
   const t=(act,s,icon,cls,title,stat,hot)=>`<button class="tile" data-act="${act}"${s?` data-s="${s}"`:''}><span class="ti ${cls}">${IC[icon]}</span><span class="stack" style="gap:3px"><b>${title}</b><span class="s${hot?' hot':''}">${stat}</span></span></button>`;
-  const setTiles=`${t('go','runs','layers','n','Runs & Setups',plural(mine('runs').length,'Run','Runs'))}${t('go','settings','gear','n','Einstellungen',profile()?.enc?'Verschlüsselt · Backup':'Profil · Sicherheit · Backup')}`;
-  if(!run)return `<div class="tiles">${t('go','feed','drop','b','Feed-Rechner','Düngepläne & Rechner')}${t('go','tips','tip','v','Wissen & Blog',`${allPosts().length} Beiträge`)}${setTiles}</div>`;
+  const setTiles=`${t('go','runs','layers','n','Runs & Setups',`${plural(liveRuns().length,'Run','Runs')} laufend${archivedRuns().length?` · ${archivedRuns().length} im Archiv`:''}`)}${t('go','settings','gear','n','Einstellungen',profile()?.enc?'Verschlüsselt · Backup':'Profil · Sicherheit · Backup')}`;
+  if(!run)return `<div class="tiles">${t('go','plants','leaf','','Strains',plural(myPlants().length,'Strain','Strains'))}${t('go','feed','drop','b','Feed-Rechner','Düngepläne & Rechner')}${t('go','tips','tip','v','Wissen & Blog',`${allPosts().length} Beiträge`)}${setTiles}</div>`;
   const today=todayISO(),ot=openTasks(run),od=ot.filter(x=>x.due<today).length,tdn=ot.filter(x=>x.due===today).length;
   const media=S.photos.filter(p=>p.runId===run.id),nV=media.filter(m=>m.kind==='video').length;
   const lastE=S.entries.filter(e=>e.runId===run.id).sort((a,b)=>(b.date+b.at).localeCompare(a.date+a.at))[0];
@@ -1818,7 +1887,7 @@ function tilesHtml(run,I){
   ${t('journal',null,'book','n','Journal',lastE?`Zuletzt ${lastE.date===today?'heute':fmtShort(lastE.date)}`:'Noch keine Einträge')}
   ${t('go','feed','drop','b','Feed-Rechner',wk?`${esc(weekLabel(wk))} · EC ${esc(wk.ec||'–')}`:'Düngeplan wählen')}
   ${(()=>{const D=steerDay(run,today);return t('go','steer','steer','b','Crop Steering',D.shots.length||!isNaN(D.db)?`${plural(D.shots.length,'Shot','Shots')} heute${!isNaN(D.db)?` · DB ${fmtDE(D.db,0)} %`:''}`:'Dryback & Shots');})()}
-  ${t('go','plants','leaf','','Pflanzen',plants.length?`${act} aktiv${plants.length>act?` · ${plants.length-act} inaktiv`:''}`:'Pflanze hinzufügen')}
+  ${t('go','plants','leaf','','Strains',`${plural(myPlants().length,'Strain','Strains')} insgesamt${act?` · ${act} aktiv`:''}`)}
   ${t('go','strains','dna','v','Genetik',plural(mine('strains').length,'Sorte','Sorten'))}
   ${t('go','harvest','jar','v','Ernte & Curing',hs)}
   ${(()=>{const C=costCalc(run);return t('go','costs','euro','w','Verbrauch & Kosten',C.total>0?`${eur(C.total)} bisher`:'Dünger, Strom, Ausgaben');})()}
@@ -1836,7 +1905,7 @@ function viewMedia(){
   const run=activeRun();if(!run)return needRun();
   const list=mediaList(),all=S.photos.filter(p=>p.runId===run.id),size=all.reduce((s,p)=>s+(+p.size||0),0);
   return `<div class="row between"><div class="seg-ctl" role="group" aria-label="Filter">${[['all','Alle'],['image','Fotos'],['video','Videos']].map(([k,l])=>`<button type="button" data-act="mKind" data-k="${k}" aria-pressed="${U.mKind===k}">${l}</button>`).join('')}</div><div class="row">${all.filter(p=>p.kind!=='video').length>1?'<button class="btn small" data-act="tlOpen">Zeitraffer</button>':''}<button class="btn primary small" data-act="addMedia">${IC.plus} Hinzufügen</button></div></div>
-  ${fld('Pflanze',selHTML('photoPlant',plantOpts(run.id),U.photoPlant,'id="photoPlant"'))}
+  ${fld('Strain',selHTML('photoPlant',plantOpts(run.id),U.photoPlant,'id="photoPlant"'))}
   ${U.compareA?`<div class="banner row between"><span>Foto A gewählt. Öffne ein zweites Foto und tippe „Mit A vergleichen“.</span><button class="btn small ghost" data-act="cmpReset">Abbrechen</button></div>`:''}
   ${list.length?`<div class="mgrid">${list.map(p=>{const I=runInfo(run,p.date);return `<button data-act="openMedia" data-id="${p.id}" aria-label="${p.kind==='video'?'Video':'Foto'} vom ${fmtDate(p.date)}">${thumbTag(p)}${p.kind==='video'?`<span class="vb">▶ ${fmtDur(p.dur)}</span>`:''}<span class="badge">${I.bloomDay?'B'+I.bloomDay:'T'+I.day}</span>${U.compareA===p.id?'<span class="sel">A</span>':''}</button>`;}).join('')}</div>`
   :`<div class="card empty"><p class="muted">Noch keine ${U.mKind==='video'?'Videos':U.mKind==='image'?'Fotos':'Fotos oder Videos'}. Alles bleibt nur auf diesem Gerät${profile()?.enc?' und wird verschlüsselt gespeichert':''}.</p><button class="btn primary" data-act="addMedia">Fotos & Videos hinzufügen</button></div>`}
@@ -1966,7 +2035,7 @@ function mediaSheet(preDate,prePlant){
    filePick('filesInput','files','Fotos & Videos','image/*,video/*',true)+
    `<p class="note" style="margin-top:-4px">Am Computer kannst du Dateien auch hierher ziehen oder mit Strg+V einfügen.</p>`+
    `<label class="check"><input type="checkbox" name="fileDate" ${preDate?'':'checked'}> Aufnahmedatum aus dem Foto übernehmen</label>`+
-   `<div class="grid2">${fld(preDate?'Datum':'Sonst Datum',inp('date',preDate||todayISO(),'type="date"'))}${fld('Pflanze',selHTML('plantId',plantOpts(run.id,'Ganzes Zelt'),prePlant||''))}</div>`+
+   `<div class="grid2">${fld(preDate?'Datum':'Sonst Datum',inp('date',preDate||todayISO(),'type="date"'))}${fld('Strain',selHTML('plantId',plantOpts(run.id,'Ganzes Zelt'),prePlant||''))}</div>`+
    fld('Notiz',inp('note','','placeholder="optional"'))+
    `<p class="note">Fotos werden auf 1600 px verkleinert, Videos auf höchstens 720p neu kodiert. Das Komprimieren eines Videos dauert etwa so lange wie das Video selbst – lass die App dabei geöffnet.</p>
    <div id="upStat" class="stack" style="gap:8px" hidden><span id="upTxt" class="small"></span><div class="prog"><i id="upBar"></i></div><button type="button" class="btn small" data-act="upCancel">Abbrechen</button></div>`,
@@ -2021,59 +2090,71 @@ function viewTasks(){
   ${done.length?`<section><div class="sec-h"><span class="sec">Erledigt</span><button class="btn small ghost" data-act="toggleDone">${U.showDone?'Ausblenden':`Anzeigen (${done.length})`}</button></div>${U.showDone?`<div class="card"><div class="list">${done.slice(0,30).map(t=>`<div class="li task"><span class="tick" aria-hidden="true">✓</span><div class="grow"><div class="t">${esc(t.title)}</div><div class="d">erledigt ${t.doneAt?fmtDate(t.doneAt):''}</div></div><button class="icon-btn" data-act="del" data-store="tasks" data-id="${t.id}" data-confirm aria-label="Löschen">✕</button></div>`).join('')}</div></div>`:''}</section>`:''}`;
 }
 function viewPlants(){
-  const run=activeRun();if(!run)return needRun();
-  const I=runInfo(run),pl=S.plants.filter(p=>p.runId===run.id);
-  return `<div class="row between"><span class="note">${plural(pl.filter(p=>p.active).length,'aktive Pflanze','aktive Pflanzen')}</span><button class="btn primary small" data-act="newPlant">${IC.plus} Pflanze</button></div>
-  ${pl.length?`<div class="card"><div class="list">${pl.map(p=>{const n=S.photos.filter(m=>m.plantId===p.id).length,e=S.entries.filter(x=>x.plantId===p.id).length;return `<div class="li"><span class="illo xs">${illo(I.phase)}</span><button type="button" class="grow" style="display:flex;flex-direction:column;gap:2px;text-align:left;background:none;border:0;padding:0;color:inherit;font:inherit" data-act="plantProfile" data-id="${p.id}"><div class="t">${esc(p.label)} ${p.active?'':'<span class="chip n">inaktiv</span>'}</div><div class="d">${esc([p.strain,p.breeder,p.cut].filter(Boolean).join(' · ')||'Keine Sorte angegeben')}${p.source?' · '+esc(p.source):''}</div><div class="d">${plural(e,'Eintrag','Einträge')} · ${plural(n,'Medium','Medien')}${p.review?' · '+stars(avgRating(p.review)):''}</div></button><div class="stack" style="gap:6px"><button class="btn small" data-act="editPlant" data-id="${p.id}">Bearbeiten</button>${I.phaseIdx>=4?`<button class="btn small ghost" data-act="review" data-id="${p.id}">Bewerten</button>`:''}</div></div>`;}).join('')}</div>`:`<div class="card empty"><p class="muted">Noch keine Pflanzen in diesem Run.</p><button class="btn primary" data-act="newPlant">Pflanze hinzufügen</button></div>`}`;
+  const run=activeRun(),all=myPlants();
+  const row=p=>{const r=byId('runs',p.runId),dry=plantDry(p),rt=avgRating(p.review);return `<button type="button" class="li alert" data-act="plantProfile" data-id="${p.id}">${runDot(r,12)}<span class="grow"><b>${esc(p.label)}</b>${p.active===false?' <span class="chip n">inaktiv</span>':''}<br><span class="small muted">${esc([p.strain&&p.strain!==p.label?p.strain:'',p.breeder,r?.name].filter(Boolean).join(' · '))}</span><br><span class="small">${!isNaN(dry)?`${fmtDE(dry,0)} g trocken · `:''}${rt?stars(rt)+' '+fmtDE(rt,1):r?.archived?'nicht bewertet':esc(runInfo(r).phase)}</span></span><span aria-hidden="true" class="muted">›</span></button>`;};
+  const cur=run?all.filter(p=>p.runId===run.id):[],live=all.filter(p=>{const r=byId('runs',p.runId);return !r.archived&&(!run||p.runId!==run.id);}),arch=all.filter(p=>byId('runs',p.runId).archived);
+  const sec=(t,l,extra='')=>l.length?`<section><div class="sec-h"><span class="sec">${t}</span>${extra}</div><div class="card"><div class="list">${l.map(row).join('')}</div></div></section>`:'';
+  return `<div class="row between"><span class="note">${plural(all.length,'Strain','Strains')} insgesamt · ${plural(new Set(all.map(p=>(p.strain||p.label).trim().toLowerCase())).size,'Sorte','Sorten')}</span>${run?`<button class="btn primary small" data-act="newPlant">${IC.plus} Strain</button>`:''}</div>
+  ${all.length?'':`<div class="card empty"><p class="muted">Jeder neue Run legt automatisch einen Strain mit seinem Namen an. Hier sammeln sich alle Strains, die du je gegrowt hast – mit Gewicht und Bewertung.</p>${run?'':'<button class="btn primary" data-act="newRun">Run anlegen</button>'}</div>`}
+  ${sec(run?`Run „${esc(run.name)}“`:'Aktuell',cur)}${sec('Weitere laufende Runs',live)}${sec('Archiv',arch,'<span class="small muted">abgeschlossene Runs</span>')}`;
 }
 function plantProfileSheet(p){
   if(!p)return;
   const media=S.photos.filter(m=>m.plantId===p.id).sort((a,b)=>(b.date+b.at).localeCompare(a.date+a.at));
   const nV=media.filter(m=>m.kind==='video').length,nP=media.length-nV;
   const entries=S.entries.filter(e=>e.plantId===p.id).length;
-  const r=p.review,run=byId('runs',p.runId),I=run&&runInfo(run);
+  const r=p.review,run=byId('runs',p.runId),I=run&&runInfo(run),dry=plantDry(p),wet=plantWet(p);
   openSheet(p.label,
    `<div class="stack" style="gap:12px">
-   <div class="row">${p.active?'<span class="chip">aktiv</span>':'<span class="chip n">inaktiv</span>'}${r?stars(avgRating(r)):''}</div>
+   <div class="row">${runDot(run,12)}<span class="small">${esc(run?.name||'')}${run?.archived?' · Archiv':''}</span>${p.active===false?'<span class="chip n">inaktiv</span>':''}${r&&avgRating(r)?stars(avgRating(r)):''}</div>
    <p class="small muted">${esc([p.strain,p.breeder,p.cut,p.source].filter(Boolean).join(' · ')||'Keine Sorte angegeben')}</p>
-   ${r?.dry?`<p class="small">Trockengewicht: <b>${fmtDE(parseNum(r.dry),0)} g</b></p>`:''}
+   ${!isNaN(dry)||!isNaN(wet)?`<div class="keyfacts"><div><div class="k">Nass</div><div>${isNaN(wet)?'–':fmtDE(wet,0)+' g'}</div></div><div><div class="k">Trocken</div><div>${isNaN(dry)?'–':fmtDE(dry,0)+' g'}</div></div></div>`:''}
+   ${r?.note?`<p class="small">${esc(r.note)}</p>`:''}
    <div class="row">
      <button type="button" class="btn small primary" data-act="addMediaFor" data-id="${p.id}">${IC.plus} Foto/Video</button>
      <button type="button" class="btn small" data-act="editPlant" data-id="${p.id}">Bearbeiten</button>
-     ${I&&I.phaseIdx>=4?`<button type="button" class="btn small ghost" data-act="review" data-id="${p.id}">${r?'Bewertung ändern':'Bewerten'}</button>`:''}
+     ${I&&I.phaseIdx>=2?`<button type="button" class="btn small" data-act="hvWeigh" data-id="${p.id}">Gewicht</button>`:''}
+     ${I&&(I.phaseIdx>=4||run.archived)?`<button type="button" class="btn small ghost" data-act="review" data-id="${p.id}">${r&&avgRating(r)?'Bewertung ändern':'Bewerten'}</button>`:''}
    </div>
    <div class="sec-h" style="margin:0"><span class="sec">Medien</span><span class="small muted">${media.length?`${plural(nP,'Foto','Fotos')}${nV?` · ${plural(nV,'Video','Videos')}`:''}`:'Keine'}</span></div>
-   ${media.length?`<div class="mgrid">${media.map(m=>`<button type="button" data-act="openMediaFor" data-id="${m.id}" data-plant="${p.id}" aria-label="${m.kind==='video'?'Video':'Foto'} vom ${fmtDate(m.date)}">${thumbTag(m)}${m.kind==='video'?`<span class="vb">▶ ${fmtDur(m.dur)}</span>`:''}</button>`).join('')}</div>`:`<p class="muted small">Noch keine Fotos/Videos zu dieser Pflanze. Neue Uploads kannst du direkt hier oben mit "Foto/Video" dieser Pflanze zuordnen.</p>`}
-   ${entries?`<p class="small muted">${plural(entries,'Journal-Eintrag','Journal-Einträge')} zu dieser Pflanze</p>`:''}
+   ${media.length?`<div class="mgrid">${media.map(m=>`<button type="button" data-act="openMediaFor" data-id="${m.id}" data-plant="${p.id}" aria-label="${m.kind==='video'?'Video':'Foto'} vom ${fmtDate(m.date)}">${thumbTag(m)}${m.kind==='video'?`<span class="vb">▶ ${fmtDur(m.dur)}</span>`:''}</button>`).join('')}</div>`:`<p class="muted small">Noch keine Fotos/Videos zu diesem Strain.</p>`}
+   ${entries?`<p class="small muted">${plural(entries,'Journal-Eintrag','Journal-Einträge')} zu diesem Strain</p>`:''}
    </div>`,null,null);
 }
 function viewHarvestBase(){
   const run=activeRun();if(!run)return needRun();
-  const I=runInfo(run),setup=byId('setups',run.setupId),plants=S.plants.filter(p=>p.runId===run.id);
+  const I=runInfo(run),plants=runPlants(run),Y=runYield(run);
+  if(U.hvPlant&&!plants.some(p=>p.id===U.hvPlant))U.hvPlant='';
   const total=Math.round(parseNum(run.planBloomDays))||0;
   const lt=S.entries.filter(e=>e.runId===run.id&&e.tri).sort((a,b)=>(b.date+b.at).localeCompare(a.date+a.at))[0];
-  const area=setup&&parseNum(setup.w)&&parseNum(setup.d)?parseNum(setup.w)*parseNum(setup.d)/10000:null,watt=setup?parseNum(setup.watt):NaN,dry=run.harvest?parseNum(run.harvest.dry):NaN;
-  return `<section><div class="sec-h"><span class="sec">Erntefenster</span><div class="row" style="gap:6px"><button class="btn small ghost" data-act="go" data-s="trichCompare">Vergleichen</button><button class="btn small" data-act="trich">Trichom-Check</button></div></div><div class="card stack">
+  const unrated=plants.filter(p=>!avgRating(p.review)).length;
+  return `${plants.length>1?`<div class="chips" role="group" aria-label="Strain wählen">${[['','Alle Strains'],...plants.map(p=>[p.id,p.label])].map(([k,l])=>`<button type="button" data-act="hvPick" data-id="${esc(k)}" aria-pressed="${(U.hvPlant||'')===k}">${esc(l)}</button>`).join('')}</div>`:''}
+  <section><div class="sec-h"><span class="sec">Erntefenster</span><div class="row" style="gap:6px"><button class="btn small ghost" data-act="go" data-s="trichCompare">Vergleichen</button><button class="btn small" data-act="trich">Trichom-Check</button></div></div><div class="card stack">
   ${I.bloomDay?(total?`<div class="row between"><b>Blüte Tag ${I.bloomDay} von ${total}</b><span class="chip ${I.harvestLeft<=7?'v':'n'}">${I.harvestLeft>=0?'noch '+plural(I.harvestLeft,'Tag','Tage'):plural(-I.harvestLeft,'Tag','Tage')+' drüber'}</span></div><div class="bar v"><i style="width:${Math.min(100,I.bloomDay/total*100)}%"></i></div><p class="note">Geplante Ernte: ${fmtDate(I.expHarvest)}</p>`:`<div class="row between"><span class="note">Trag im Run die geplante Blütedauer ein, dann zeigt die App das Erntedatum.</span><button class="btn small" data-act="editRun" data-id="${run.id}">Eintragen</button></div>`):'<p class="note">Das Erntefenster erscheint, sobald der Run in der Blüte ist.</p>'}
   ${lt?`<div class="stack" style="gap:6px"><span class="small muted">Letzter Trichom-Check ${fmtShort(lt.date)}${lt.plantId?' · '+esc(plantName(lt.plantId)):''}</span>${triBar(lt.tri)}<span class="small">${triTxt(lt.tri)}</span><p>${esc(triHint(lt.tri))}</p></div>`:'<p class="muted small">Noch kein Trichom-Check.</p>'}
   </div></section>
   <section><div class="sec-h"><span class="sec">Ertrag</span><button class="btn small" data-act="report" data-id="${run.id}">Bericht</button></div><div class="card stack">
-  <div class="grid2">${fld('Nass gesamt (g)',`<input id="hvWet" inputmode="decimal" value="${esc(run.harvest?.wet||'')}">`)}${fld('Trocken gesamt (g)',`<input id="hvDry" inputmode="decimal" value="${esc(run.harvest?.dry||'')}">`)}</div>
+  <div class="targets" style="margin-top:0"><div class="tgt"><div class="k">Trocken gesamt</div><div class="v">${isNaN(Y.dry)?'–':fmtDE(Y.dry,0)+' g'}</div></div><div class="tgt"><div class="k">g/Strain</div><div class="v">${isNaN(Y.perPlant)?'–':fmtDE(Y.perPlant,1)}</div></div><div class="tgt"><div class="k">g/m²</div><div class="v">${isNaN(Y.perM2)?'–':fmtDE(Y.perM2,0)}</div></div></div>
+  <p class="note">g/Strain = Trockengewicht ÷ ${plural(Y.n,'Strain','Strains')} im Run. g/m² = Trockengewicht ÷ ${Y.area?fmtDE(Y.area,2)+' m² (Länge × Breite aus dem Setup)':'Fläche – trag im Setup Länge und Breite ein'}.${!isNaN(Y.dry)&&Y.watt>0?` · ${fmtDE(Y.dry/Y.watt,2)} g/Watt`:''}${!isNaN(Y.wet)&&!isNaN(Y.dry)&&Y.wet>0?` · Nass ${fmtDE(Y.wet,0)} g (${fmtDE(Y.dry/Y.wet*100,0)} % Trockenanteil)`:''}</p>
+  <div class="list">${plants.map(p=>{const d=plantDry(p),w=plantWet(p),rt=avgRating(p.review);return `<div class="li" style="align-items:center"><div class="grow"><div class="t">${esc(p.label)}</div><div class="d">Nass ${isNaN(w)?'–':fmtDE(w,0)+' g'} · Trocken ${isNaN(d)?'–':fmtDE(d,0)+' g'}${rt?' · '+stars(rt):''}</div></div><div class="stack" style="gap:6px"><button class="btn small" data-act="hvWeigh" data-id="${p.id}">Gewicht</button><button class="btn small ghost" data-act="review" data-id="${p.id}">${rt?'Bewertung':'Bewerten'}</button></div></div>`;}).join('')||'<p class="muted">Noch keine Strains in diesem Run.</p>'}</div>
   ${fld('Erntezeitpunkt – rückblickend betrachtet',selHTML('hvTiming',HARVEST_TIMING,run.harvest?.timing||'','id="hvTiming"'))}
-  <button class="btn" data-act="harvestSave">Ertrag speichern</button>
-  ${!isNaN(dry)?`<div class="targets"><div class="tgt"><div class="k">g/m²</div><div class="v">${area?fmtDE(dry/area,0):'–'}</div></div><div class="tgt"><div class="k">g/Watt</div><div class="v">${!isNaN(watt)&&watt?fmtDE(dry/watt,2):'–'}</div></div></div>${isNaN(watt)||!watt?'<p class="note">Für g/Watt die Lampenleistung im Setup eintragen.</p>':''}`:''}
   </div></section>
-  <section><div class="sec-h"><span class="sec">Bewertung je Pflanze</span></div><div class="card">${plants.length?`<div class="list">${plants.map(p=>{const r=p.review;return `<div class="li"><div class="grow"><div class="t">${esc(p.label)}${p.strain?' · '+esc(p.strain):''}</div><div class="d">${r?`${!isNaN(parseNum(r.dry))?fmtDE(parseNum(r.dry),0)+' g · ':''}${stars(avgRating(r))}`:'Noch nicht bewertet'}</div></div><button class="btn small" data-act="review" data-id="${p.id}">${r?'Ändern':'Bewerten'}</button></div>`;}).join('')}</div>`:'<p class="muted">Noch keine Pflanzen.</p>'}</div></section>`;
+  <section class="card stack"><b>${run.archived?'Dieser Run ist archiviert':'Run abschließen'}</b>
+  ${run.archived?`<p class="small muted">Archiviert am ${fmtDate(run.archivedAt)}. Gewichte und Bewertungen kannst du weiter anpassen.</p><button class="btn small" data-act="restoreRun" data-id="${run.id}">Wieder aktivieren</button>`
+  :`<p class="small muted">Nach Trocknung und Curing: Run ins Archiv legen. Strains, Gewichte, Bewertungen und Journal bleiben vollständig erhalten.${unrated?` Noch ${plural(unrated,'Strain','Strains')} ohne Bewertung.`:''}</p><button class="btn small primary" data-act="archiveRun" data-id="${run.id}" data-confirm>Abschließen & archivieren</button>`}
+  </section>`;
 }
 function viewRuns(){
-  const run=activeRun(),runs=mine('runs'),I=run&&runInfo(run);
-  return `${run?`<section><div class="sec-h"><span class="sec">Aktiver Run</span><button class="btn small" data-act="editRun" data-id="${run.id}">Bearbeiten</button></div><div class="card stack"><div class="row"><span class="illo xs">${illo(I.phase)}</span><b class="grow">${esc(run.name)}</b><span class="chip">${esc(I.phase)}</span></div>
-  <div class="list">${I.phases.map(p=>`<div class="li"><span class="chip ${p.type===I.phase?'':'n'}">${esc(p.type)}</span><div class="grow"><div class="t">${fmtDate(p.date)}</div><div class="d">Tag ${daysBetween(run.start,p.date)+1} des Runs</div></div><button class="btn small ghost danger" data-act="delPhase" data-type="${esc(p.type)}" data-confirm>Entfernen</button></div>`).join('')}</div>
+  const run=activeRun(),live=liveRuns(),arch=archivedRuns(),I=run&&runInfo(run);
+  const card=(r,isArch)=>{const J=runInfo(r),n=runPlants(r).length,e=runEnd(r),Y=runYield(r);return `<div class="li" style="align-items:flex-start">${runDot(r,14)}<div class="grow"><div class="t">${esc(r.name)} ${r.id===run?.id?'<span class="chip">aktiv</span>':''}</div><div class="d">Start ${fmtDate(r.start)}${e?` · Ende ${fmtDate(e)}`:' · Ende offen'}${isArch?'':` · Tag ${J.day} · ${esc(J.phase)}`} · ${plural(n,'Strain','Strains')}${!isNaN(Y.dry)?` · ${fmtDE(Y.dry,0)} g`:''}</div><div class="row" style="margin-top:8px">${r.id!==run?.id?`<button class="btn small" data-act="activateRun" data-id="${r.id}">Öffnen</button>`:''}<button class="btn small" data-act="report" data-id="${r.id}">Bericht</button><button class="btn small ghost" data-act="editRun" data-id="${r.id}">Bearbeiten</button>${isArch?`<button class="btn small ghost" data-act="restoreRun" data-id="${r.id}">Wiederherstellen</button><button class="btn small ghost danger" data-act="purgeRun" data-id="${r.id}" data-confirm>Endgültig löschen</button>`:`<button class="btn small ghost" data-act="archiveRun" data-id="${r.id}" data-confirm>Archivieren</button>`}</div></div></div>`;};
+  return `${run&&!run.archived?`<section><div class="sec-h"><span class="sec">Aktiver Run</span><button class="btn small" data-act="editRun" data-id="${run.id}">Bearbeiten</button></div><div class="card stack"><div class="row">${runDot(run,14)}<b class="grow">${esc(run.name)}</b><span class="chip">${esc(I.phase)}</span></div>
+  <div class="list phase-list">${I.phases.map((p,i)=>`<div class="li"><span class="chip ${p.type===I.phase?'':'n'}">${esc(p.type)}</span><div class="grow"><div class="t">${fmtDate(p.date)}</div><div class="d">Tag ${daysBetween(run.start,p.date)+1} des Runs</div></div>${i>0?`<button class="btn small ghost danger" data-act="delPhase" data-type="${esc(p.type)}" data-confirm>Entfernen</button>`:''}</div>`).join('')}</div>
   <button class="btn primary" data-act="phase">Phase wechseln</button></div></section>`:''}
-  <section><div class="sec-h"><span class="sec">Alle Runs</span><button class="btn small primary" data-act="newRun">${IC.plus} Run</button></div>
-  <div class="card">${runs.length?`<div class="list">${runs.map(r=>{const J=runInfo(r);const n=S.plants.filter(p=>p.runId===r.id).length;return `<div class="li"><div class="grow"><div class="t">${esc(r.name)} ${r.id===run?.id?'<span class="chip">aktiv</span>':''}</div><div class="d">Start ${fmtDate(r.start)} · Tag ${J.day} · ${esc(J.phase)} · ${plural(n,'Pflanze','Pflanzen')}</div><div class="row" style="margin-top:8px">${r.id!==run?.id?`<button class="btn small" data-act="activateRun" data-id="${r.id}">Öffnen</button>`:''}<button class="btn small" data-act="report" data-id="${r.id}">Bericht</button><button class="btn small ghost" data-act="editRun" data-id="${r.id}">Bearbeiten</button><button class="btn small ghost danger" data-act="del" data-store="runs" data-id="${r.id}" data-confirm>Löschen</button></div></div></div>`;}).join('')}</div>`:'<p class="muted">Noch kein Run angelegt.</p>'}</div></section>
+  <section><div class="sec-h"><span class="sec">Laufende Runs</span><button class="btn small primary" data-act="newRun">${IC.plus} Run</button></div>
+  <div class="card">${live.length?`<div class="list">${live.map(r=>card(r,false)).join('')}</div>`:'<p class="muted">Kein laufender Run.</p>'}</div></section>
+  ${arch.length?`<section><div class="sec-h"><span class="sec">Archiv</span><span class="small muted">${plural(arch.length,'Run','Runs')}</span></div><div class="card"><div class="list">${arch.map(r=>card(r,true)).join('')}</div></div></section>`:''}
   <section><div class="sec-h"><span class="sec">Setups</span><button class="btn small" data-act="newSetup">${IC.plus} Setup</button></div>
-  <div class="card">${mine('setups').length?`<div class="list">${mine('setups').map(s=>`<div class="li"><div class="grow"><div class="t">${esc(s.name)}</div><div class="d">${esc([s.w&&s.d?`${s.w}×${s.d} cm`:'',s.watt?s.watt+' W':'',s.irrigation,s.medium,s.potL?s.potL+' L Topf':'',s.tankL?s.tankL+' L Tank':'',s.sensors].filter(Boolean).join(' · '))}</div></div><button class="btn small ghost" data-act="editSetup" data-id="${s.id}">Bearbeiten</button></div>`).join('')}</div>`:'<p class="muted">Noch kein Setup.</p>'}</div></section>`;
+  <div class="card">${mine('setups').length?`<div class="list">${mine('setups').map(s=>`<div class="li"><div class="grow"><div class="t">${esc(s.name)}</div><div class="d">${esc(setupLine(s))}</div></div><button class="btn small ghost" data-act="editSetup" data-id="${s.id}">Bearbeiten</button></div>`).join('')}</div>`:'<p class="muted">Noch kein Setup.</p>'}</div></section>`;
 }
 
 /* ----- Einstellungen ----- */
@@ -2117,7 +2198,7 @@ function viewSettings(){
 
   <section><div class="sec-h"><span class="sec">Profil löschen</span></div><div class="card stack"><p class="small">Löscht das Profil „${esc(P.name)}“ mit allen Runs, Plänen, Fotos und Videos von diesem Gerät.</p><button class="btn small danger" data-act="profileDel" data-confirm>Profil endgültig löschen</button></div></section>
 
-  <section class="card stack"><span class="sec">Über</span><p class="note">Zeltbuch · Version 8. Herstellerpläne Stand ${LIB_ASOF}. Erinnerungen erscheinen in der App; Push-Benachrichtigungen kommen mit der Android-Version.</p></section>`;
+  <section class="card stack"><span class="sec">Über</span><p class="note">Zeltbuch · Version 9. Herstellerpläne Stand ${LIB_ASOF}. Erinnerungen erscheinen in der App; Push-Benachrichtigungen kommen mit der Android-Version.</p></section>`;
 }
 function importBanner(imp){
   if(imp.pending)return `<div class="banner stack" style="gap:8px"><p><b>${esc(imp.name)}</b> ist mit einem Passwort geschützt.</p><input type="password" id="impPw" placeholder="Backup-Passwort" autocomplete="off"><div class="row"><button class="btn small primary" data-act="importDecrypt">Entschlüsseln</button><button class="btn small ghost" data-act="importCancel">Abbrechen</button></div></div>`;
@@ -2161,7 +2242,8 @@ async function tryUnlock(secret){
   else{registerFail(p.id);U.pinEntry='';U.pinMsg=`Falsch${p.lock?.type==='pass'?'es Passwort':'e PIN'}`;renderLock();const d=$('#pinDots')||$('#passIn');if(d)d.classList.add('shake');}
 }
 function resetUi(){Object.assign(U,{screen:'home',feedView:'calc',planId:null,weekId:null,weekPlan:null,tankL:null,jType:'',photoPlant:'',viewer:null,compareA:null,compare:null,importData:null});if(U.coach.ctl)U.coach.ctl.abort();U.coach={turns:[],ctl:null,busy:false};closeSheet();renderViewer();}
-function switchProfile(pid){META.activeProfile=pid;saveMeta();resetUi();U.locked=false;U.pinEntry='';U.pinMsg='';render();window.scrollTo(0,0);sbInit(pid);}
+function assignRunColors(){mine('runs').filter(r=>!r.color).sort((a,b)=>a.start.localeCompare(b.start)).forEach(r=>{r.color=nextRunColor();save('runs',r,true);});}
+function switchProfile(pid){META.activeProfile=pid;saveMeta();resetUi();U.locked=false;U.pinEntry='';U.pinMsg='';assignRunColors();render();window.scrollTo(0,0);sbInit(pid);}
 async function lockApp(stage){
   closeSheet({noHist:true});U.viewer=null;U.compare=null;if(U.tl&&U.tl.open){tlStop();U.tl.open=false;}renderViewer();
   if(U.coach.ctl)U.coach.ctl.abort();U.coach={turns:[],ctl:null,busy:false};
@@ -2217,12 +2299,13 @@ function profileMenuSheet(){
   <div class="stack"><button type="button" class="btn" data-act="profileEdit">Name & Bild ändern</button>${p.enc?'<button type="button" class="btn" data-act="lock">Jetzt sperren</button>':''}<button type="button" class="btn" data-act="switchProf">Profil wechseln</button><button type="button" class="btn" data-act="go" data-s="settings">Einstellungen & Sicherheit</button></div>`,null,null);
 }
 function runSwitchSheet(){
-  const run=activeRun();
-  openSheet('Run wechseln',`<div class="card"><div class="list">${mine('runs').map(r=>{const J=runInfo(r);return `<button type="button" class="li alert" data-act="activateRun" data-id="${r.id}"><span class="illo xs">${illo(J.phase)}</span><span class="grow"><b>${esc(r.name)}</b><br><span class="small muted">Tag ${J.day} · ${esc(J.phase)}</span></span>${r.id===run?.id?'<span class="chip">aktiv</span>':''}</button>`;}).join('')||'<p class="muted">Noch kein Run.</p>'}</div></div><div class="row"><button type="button" class="btn primary" data-act="newRun">${IC.plus} Neuer Run</button><button type="button" class="btn" data-act="go" data-s="runs">Runs verwalten</button></div>`,null,null);
+  const run=activeRun(),ar=archivedRuns();
+  openSheet('Run wechseln',`<div class="card"><div class="list">${liveRuns().map(r=>{const J=runInfo(r);return `<button type="button" class="li alert" data-act="activateRun" data-id="${r.id}">${runDot(r,12)}<span class="grow"><b>${esc(r.name)}</b><br><span class="small muted">Tag ${J.day} · ${esc(J.phase)}</span></span>${r.id===run?.id?'<span class="chip">aktiv</span>':''}</button>`;}).join('')||'<p class="muted">Kein laufender Run.</p>'}</div></div>${ar.length?`<button type="button" class="btn small ghost" data-act="go" data-s="runs">Archiv (${ar.length})</button>`:''}<div class="row"><button type="button" class="btn primary" data-act="newRun">${IC.plus} Neuer Run</button><button type="button" class="btn" data-act="go" data-s="runs">Runs verwalten</button></div>`,null,null);
 }
 function quickAddSheet(){
   const q=(act,s,icon,label,d)=>`<button type="button" data-act="${act}"${s?` data-s="${s}"`:''}${d?` data-d="${d}"`:''}><span class="ti">${IC[icon]}</span>${label}</button>`;
-  openSheet('Hinzufügen',`<div class="qa">${q('newEntry',null,'note','Notiz')}${q('addMedia',null,'cam','Foto / Video')}${q('newTask',null,'task','Aufgabe')}${q('trich',null,'leaf','Trichom-Check')}${q('go','feed','drop','Mischung')}${q('quickShot',null,'steer','Shot')}${q('quickRead',null,'steer','Topf wiegen / VWC')}</div>`,null,null);
+  const run=activeRun();
+  openSheet('Hinzufügen',`<div class="qa">${q('newRun',null,'layers','Neuer Run')}${run?q('newEntry',null,'note','Notiz')+q('addMedia',null,'cam','Foto / Video')+q('newTask',null,'task','Aufgabe')+q('trich',null,'leaf','Trichom-Check')+q('go','feed','drop','Mischung')+q('quickShot',null,'steer','Shot')+q('quickRead',null,'steer','Topf wiegen / VWC')+q('newPlant',null,'leaf','Strain'):''}</div>`,null,null);
 }
 function exportSheet(){
   openSheet('Backup exportieren',`<p class="small">Enthält alle Daten und Medien des Profils „${esc(profile().name)}“.</p>
@@ -2365,7 +2448,13 @@ const A={
   vCompare:el=>{const id=el.dataset.id;if(!U.compareA){U.compareA=id;toast('Foto A gewählt – öffne jetzt ein zweites');U.viewer=null;renderViewer();render();}else if(U.compareA!==id){U.compare=[U.compareA,id];U.compareA=null;U.viewer=null;renderViewer();}},
   triPick:el=>{const id=el.dataset.id;if(!U.compareA){U.compareA=id;toast('Foto A gewählt – tippe ein zweites an');render();}else if(U.compareA!==id){U.compare=[U.compareA,id];U.compareA=null;render();renderViewer();}},
   cmpReset:()=>{U.compareA=null;render();},
-  harvestSave:()=>{const run=activeRun();run.harvest={wet:$('#hvWet').value.trim(),dry:$('#hvDry').value.trim(),timing:$('#hvTiming')?.value||''};save('runs',run);toast('Ertrag gespeichert');render();},
+  hvPick:el=>{U.hvPlant=el.dataset.id||'';render();},
+  hvWeigh:el=>{const p=byId('plants',el.dataset.id);if(p)weighSheet(p);},
+  archiveRun:el=>{const r=byId('runs',el.dataset.id);if(!r)return;archiveRun(r);toast(`„${r.name}“ archiviert`);render();},
+  restoreRun:el=>{const r=byId('runs',el.dataset.id);if(!r)return;delete r.archived;delete r.archivedAt;save('runs',r);toast('Run wiederhergestellt');render();},
+  purgeRun:el=>{const id=el.dataset.id;cascadeRun(id);remove('runs',id);if(activeRun()?.id===id)setActiveRun(liveRuns()[0]?.id||null);toast('Run endgültig gelöscht');render();},
+  cureOn:el=>{const p=byId('plants',el.dataset.id);if(p)cureOnSheet(p);},
+  cureOff:el=>{const p=byId('plants',el.dataset.id);if(p){cureStop(p);toast('Lüft-Plan beendet');render();}},
   pos:el=>{U.pos=el.dataset.pos;$$('[data-act=pos]').forEach(b=>b.setAttribute('aria-pressed',b.dataset.pos===U.pos));$('#feedOut').innerHTML=feedOut();},
   feedSave:()=>feedSaveSheet(),
   feedEdit:()=>{U.feedView='edit';render();window.scrollTo(0,0);},
@@ -2459,12 +2548,13 @@ document.addEventListener('paste',e=>{const z=$('#sheet:not([hidden]) [data-drop
 
 /* ---------- Start ---------- */
 function seed(pid){
-  const setup={id:uid(),pid,name:'Zelt 150×150',w:150,d:150,watt:'',irrigation:'Wilma XXL 8 (Tropfsystem)',medium:'',potL:'',tankL:150,sensors:'Spider Farmer GGS + SensorPro, CO₂'};
+  const setup={id:uid(),pid,kind:'Zelt',name:'Zelt 150×150',w:150,d:150,watt:'',irrigation:'Wilma XXL 8 (Tropfsystem)',medium:'',potL:'',tankL:150,sensors:'Spider Farmer GGS + SensorPro, CO₂'};
   save('setups',setup);save('plans',athenaPlan(pid));
   const start=addDays(todayISO(),-30);
-  const run={id:uid(),pid,name:'Beispiel-Run',example:true,setupId:setup.id,start,medium:'',planVegWeeks:'',planBloomDays:63,phases:[{type:'Keimung',date:start},{type:'Veg',date:addDays(start,6)},{type:'Blüte',date:addDays(start,24)}],harvest:null};
+  const run={id:uid(),pid,name:'Beispiel-Run',example:true,setupId:setup.id,start,medium:'',planVegWeeks:3,planBloomDays:63,phases:[{type:'Keimung',date:start},{type:'Veg',date:addDays(start,6)},{type:'Blüte',date:addDays(start,24)}],harvest:null};
   save('runs',run);
-  const p1={id:uid(),pid,runId:run.id,label:'P1',strain:'Beispiel-Sorte',breeder:'',cut:'',source:'Samen',active:true};save('plants',p1);
+  run.color=RUN_COLORS[0];save('runs',run);
+  const p1={id:uid(),pid,runId:run.id,label:'Beispiel-Run',strain:'Beispiel-Sorte',breeder:'',cut:'',source:'Samen',active:true};save('plants',p1);
   save('entries',{id:uid(),pid,runId:run.id,date:addDays(start,14),type:'Topping',plantId:p1.id,text:'Über dem 5. Nodium getoppt.',at:addDays(start,14)+'T18:10'});
   save('entries',{id:uid(),pid,runId:run.id,date:addDays(start,24),type:'Notiz',plantId:'',text:'Auf 12/12 umgestellt. Beispiel-Eintrag – kann gelöscht werden.',at:addDays(start,24)+'T19:00'});
   save('tasks',{id:uid(),pid,runId:run.id,title:'Gießen',type:'Gießen',plantId:'',due:todayISO(),every:2,done:false});
@@ -2503,6 +2593,7 @@ async function boot(){
   try{history.replaceState({s:'home',d:0},'');}catch(e){}
   const P=profile();
   if(isLocked(P)){U.locked=true;U.lockStage=P.lock?.type==='pass'?'pass':'pin';U.lockTarget=P.id;}
+  if(!U.locked)assignRunColors();
   render();
   if(!U.locked)sbInit();
   try{if('serviceWorker' in navigator&&location.protocol==='https:'&&!/claude|anthropic/i.test(location.hostname))navigator.serviceWorker.register('sw.js').catch(()=>{});}catch(e){}
@@ -2644,29 +2735,88 @@ function measTxt(e){
   return '';
 }
 function cureStatus(rh){const v=parseNum(rh);if(isNaN(v))return null;if(v<55)return ['b','zu trocken'];if(v<58)return ['w','etwas trocken'];if(v<=62)return ['','ideal'];if(v<=65)return ['w','etwas feucht – öfter lüften'];return ['b','zu feucht – täglich lüften, ggf. offen nachtrocknen'];}
+/* ---------- Trocknung & Curing je Strain, Lüft-Plan ----------
+   Lüft-Plan nach gängigen Anleitungen (u. a. BudTrainer, Trimleaf, Royal Queen Seeds, Atmosi, Azarius):
+   Woche 1 häufig und länger lüften, dann schrittweise seltener; Luftfeuchte im Glas steuert nach. */
+const CURE_STEPS=[
+  {to:3,n:2,every:1,min:'10–15',tip:'Morgens und abends öffnen, Blüten sanft durchschütteln. Auf Heu- oder Ammoniakgeruch achten – das heißt: zu feucht.'},
+  {to:7,n:1,every:1,min:'10',tip:'Einmal täglich lüften. Bleibt die Feuchte über 65 %, weiter zweimal täglich.'},
+  {to:14,n:1,every:2,min:'5–10',tip:'Alle zwei Tage lüften. Die Feuchte sollte sich bei 58–62 % einpendeln.'},
+  {to:21,n:1,every:3,min:'5',tip:'Alle drei Tage kurz lüften und riechen.'},
+  {to:30,n:1,every:7,min:'2–5',tip:'Einmal pro Woche kurz lüften. Nach etwa 4 Wochen ist ein guter Cure erreicht.'},
+  {to:60,n:1,every:14,min:'2–5',tip:'Alle zwei Wochen kontrollieren. Viele Sorten werden bis 8 Wochen noch besser.'},
+  {to:99999,n:1,every:30,min:'kurz',tip:'Lagerphase: einmal im Monat öffnen und prüfen. Kühl und dunkel lagern.'}
+];
+function lastCureRh(p){const e=S.entries.filter(x=>x.type==='Curing'&&x.plantId===p.id&&!isNaN(parseNum(x.rh))).sort((a,b)=>(b.date+b.at).localeCompare(a.date+a.at))[0];return e&&daysBetween(e.date,todayISO())<=3?parseNum(e.rh):NaN;}
+function curePlan(day,rh){
+  const s={...CURE_STEPS.find(x=>day<=x.to)};s.day=day;s.warn='';s.state='ok';
+  if(isNaN(rh))s.hint='Miss die Luftfeuchte im Glas (kleines Hygrometer) – dann passt das Zeltbuch den Plan an.';
+  else if(rh>70){Object.assign(s,{n:2,every:1,min:'60+',state:'b',warn:`${fmtDE(rh,0)} % – deutlich zu feucht: Blüten 12–24 h offen nachtrocknen lassen, dann zurück ins Glas. Schimmelgefahr!`});}
+  else if(rh>65){Object.assign(s,{n:2,every:1,min:'30–60',state:'w',warn:`${fmtDE(rh,0)} % – zu feucht: Deckel 1–2 h offen lassen, danach 2× täglich lüften, bis 58–62 % erreicht sind.`});}
+  else if(rh>62){s.every=Math.min(s.every,1);s.state='w';s.warn=`${fmtDE(rh,0)} % – etwas feucht: täglich lüften, bis die Feuchte bei 58–62 % liegt.`;}
+  else if(rh>=58){s.warn=`${fmtDE(rh,0)} % – ideal.`;}
+  else if(rh>=55){s.every=Math.max(s.every,3);s.state='w';s.warn=`${fmtDE(rh,0)} % – etwas trocken: seltener lüften, ggf. einen 62-%-Feuchtepack dazulegen.`;}
+  else{Object.assign(s,{n:1,every:2,min:'0',pause:true,state:'b',warn:`${fmtDE(rh,0)} % – zu trocken: nicht lüften, 62-%-Feuchtepack ins Glas, in 2 Tagen erneut messen.`});}
+  s.title=s.pause?'Glas: Feuchte prüfen (nicht lüften)':s.n>1?`Gläser lüften · 2× heute, je ${s.min} Min.`:`Gläser lüften · ${s.min} Min.`;
+  return s;
+}
+function cureTaskFor(p){return S.tasks.find(t=>t.cure&&t.plantId===p.id&&!t.done);}
+function cureRefresh(p){
+  const t=cureTaskFor(p);if(!t||!p.cure)return;
+  const day=Math.max(1,daysBetween(p.cure.start,todayISO())+1),pl=curePlan(day,lastCureRh(p));
+  const title=`${pl.title} (${p.label})`;
+  if(t.title!==title||t.n!==pl.n){t.title=title;t.n=pl.n;if(t.due>todayISO()&&pl.every===1&&p.cure.start<=todayISO())t.due=todayISO();save('tasks',t);}
+}
+function cureAdvance(t){
+  const p=byId('plants',t.plantId);if(!p||!p.cure){t.done=true;t.doneAt=nowStamp();save('tasks',t);return;}
+  const today=todayISO(),day=Math.max(1,daysBetween(p.cure.start,today)+1),pl=curePlan(day,lastCureRh(p));
+  if(pl.n>1&&t.cntDate!==today){t.cntDate=today;t.cnt=1;t.title=`${pl.title.replace('2× heute','2. Mal heute (abends)')} (${p.label})`;save('tasks',t);return;}
+  t.cnt=0;t.cntDate='';
+  const nd=addDays(today,pl.every),npl=curePlan(Math.max(1,daysBetween(p.cure.start,nd)+1),lastCureRh(p));
+  t.due=nd;t.title=`${npl.title} (${p.label})`;t.n=npl.n;save('tasks',t);
+}
+function cureStart(p,start){
+  p.cure={start,on:true};save('plants',p);
+  let t=cureTaskFor(p);const pl=curePlan(Math.max(1,daysBetween(start,todayISO())+1),lastCureRh(p));
+  if(!t)t={id:uid(),runId:p.runId,plantId:p.id,cure:true,type:'Curing',every:0,done:false};
+  Object.assign(t,{title:`${pl.title} (${p.label})`,n:pl.n,due:start>todayISO()?start:todayISO()});save('tasks',t);
+}
+function cureStop(p){delete p.cure;save('plants',p);const t=cureTaskFor(p);if(t){t.done=true;t.doneAt=nowStamp();save('tasks',t);}}
 function dryCureHtml(){
   const run=activeRun();if(!run)return '';
-  const I=runInfo(run),asc=(a,b)=>(a.date+a.at).localeCompare(b.date+b.at);
-  const dry=S.entries.filter(e=>e.runId===run.id&&e.type==='Trocknung').sort(asc);
-  const cure=S.entries.filter(e=>e.runId===run.id&&e.type==='Curing').sort(asc);
-  const wet=parseNum(run.harvest?.wet),lastW=[...dry].reverse().find(e=>!isNaN(parseNum(e.w)));
+  const I=runInfo(run),asc=(a,b)=>(a.date+a.at).localeCompare(b.date+b.at),plants=runPlants(run);
+  const sel=U.hvPlant?byId('plants',U.hvPlant):null,pf=e=>!sel||e.plantId===sel.id;
+  const dry=S.entries.filter(e=>e.runId===run.id&&e.type==='Trocknung'&&pf(e)).sort(asc);
+  const cure=S.entries.filter(e=>e.runId===run.id&&e.type==='Curing'&&pf(e)).sort(asc);
+  const Y=runYield(run),wet=sel?plantWet(sel):Y.wet;
+  const wts=dry.filter(e=>!isNaN(parseNum(e.w)));
+  /* Gewichtsverlust nur sinnvoll, wenn Messung und Nassgewicht zum selben Strain gehören (oder beides „alle“) */
+  const lastW=sel?[...wts].reverse()[0]:(()=>{const perPl={};wts.forEach(e=>{perPl[e.plantId||'']=e;});const v=Object.values(perPl);return v.length&&!v.some(e=>!e.plantId)?{w:String(v.reduce((s,e)=>s+parseNum(e.w),0))}:[...wts].reverse().find(e=>!e.plantId);})();
   const start=(I.phases.find(p=>p.type==='Trocknung')||{}).date||dry[0]?.date;
   const loss=wet>0&&lastW?(1-parseNum(lastW.w)/wet)*100:NaN;
   const lastCl=[...dry].reverse().find(e=>e.t||e.rh);
-  const tS=lastCl?rangeSt(parseNum(lastCl.t),[18,21]):null,rS=lastCl?rangeSt(parseNum(lastCl.rh),[55,65]):null;
-  const jars={};cure.forEach(e=>{const k=e.jar||'Glas';jars[k]=jars[k]||[];jars[k].push(e);});
-  const cureStart=(I.phases.find(p=>p.type==='Curing')||{}).date||cure[0]?.date;
-  return `<section><div class="sec-h"><span class="sec">Trocknung</span><button class="btn small" data-act="dryAdd">${IC.plus} Messen</button></div><div class="card stack">
+  const tS=lastCl?rangeSt(parseNum(lastCl.t),[16,21]):null,rS=lastCl?rangeSt(parseNum(lastCl.rh),[55,62]):null;
+  const jars={};cure.filter(e=>e.jar||e.rh||e.w).forEach(e=>{const k=(e.plantId?plantName(e.plantId)+' · ':'')+(e.jar||'Glas');jars[k]=jars[k]||[];jars[k].push(e);});
+  const ln=e=>e.plantId&&!sel?` <span class="muted">(${esc(plantName(e.plantId))})</span>`:'';
+  const curePl=plants.filter(p=>p.active!==false);
+  return `<section><div class="sec-h"><span class="sec">Trocknung${sel?' · '+esc(sel.label):''}</span><button class="btn small" data-act="dryAdd">${IC.plus} Messen</button></div><div class="card stack">
   ${start?`<div class="row between"><b>Tag ${daysBetween(start,todayISO())+1} der Trocknung</b><span class="small muted">seit ${fmtShort(start)}</span></div>`:'<p class="note">Startet mit der Phase „Trocknung“ oder deiner ersten Messung.</p>'}
-  ${!isNaN(loss)?`<div class="stack" style="gap:6px"><div class="row between small"><span>Gewichtsverlust ${fmtDE(loss,0)} %</span><span class="muted">${fmtDE(parseNum(lastW.w),0)} g von ${fmtDE(wet,0)} g nass</span></div><div class="bar v"><i style="width:${Math.min(100,loss/75*100)}%"></i></div><p class="note">${loss>=70?'Meist trocken genug für die Gläser, wenn kleine Stängel knacken statt sich zu biegen.':'Fertig getrocknet sind Blüten meist bei etwa 70–75 % Gewichtsverlust – entscheidend ist der Stängel-Test.'}</p></div>`:wet>0?'<p class="note">Wiege die Ernte regelmäßig, dann zeigt die App den Gewichtsverlust.</p>':'<p class="note">Trag unter „Ertrag“ das Nassgewicht ein, dann zeigt die App den Trocknungsfortschritt.</p>'}
-  ${lastCl?`<p class="small">Zuletzt: ${lastCl.t?`<span class="chip ${ST_CHIP[tS]||'n'}">${esc(lastCl.t)} °C</span> `:''}${lastCl.rh?`<span class="chip ${ST_CHIP[rS]||'n'}">${esc(lastCl.rh)} % rLF</span>`:''} <span class="muted">Ziel etwa 18–21 °C und 55–65 % rLF, dunkel, leichte Luftbewegung.</span></p>`:''}
-  ${dry.length?`<div class="list">${[...dry].reverse().slice(0,6).map(e=>`<div class="li" style="align-items:center"><span class="small num" style="width:52px">${fmtShort(e.date)}</span><div class="grow">${measTxt(e)}${e.text?`<div class="d">${esc(e.text)}</div>`:''}</div><button class="icon-btn" data-act="del" data-store="entries" data-id="${e.id}" data-confirm aria-label="Löschen">✕</button></div>`).join('')}</div>`:''}
+  ${!isNaN(loss)?`<div class="stack" style="gap:6px"><div class="row between small"><span>Gewichtsverlust ${fmtDE(loss,0)} %</span><span class="muted">${fmtDE(parseNum(lastW.w),0)} g von ${fmtDE(wet,0)} g nass</span></div><div class="bar v"><i style="width:${Math.min(100,loss/75*100)}%"></i></div><p class="note">${loss>=70?'Meist trocken genug für die Gläser, wenn kleine Stängel knacken statt sich zu biegen.':'Fertig getrocknet sind Blüten meist bei etwa 70–75 % Gewichtsverlust – entscheidend ist der Stängel-Test.'}</p></div>`:`<p class="note">${sel?`Trag das Nassgewicht von „${esc(sel.label)}“ ein und wiege beim Messen, dann zeigt die App den Gewichtsverlust.`:'Trag je Strain das Nassgewicht ein und wiege regelmäßig, dann zeigt die App den Trocknungsfortschritt.'}</p>`}
+  ${lastCl?`<p class="small">Zuletzt: ${lastCl.t?`<span class="chip ${ST_CHIP[tS]||'n'}">${esc(lastCl.t)} °C</span> `:''}${lastCl.rh?`<span class="chip ${ST_CHIP[rS]||'n'}">${esc(lastCl.rh)} % rLF</span>`:''} <span class="muted">Ziel etwa 16–20 °C und 55–62 % rLF, dunkel, leichte Luftbewegung.</span></p>`:''}
+  ${dry.length?`<div class="list">${[...dry].reverse().slice(0,6).map(e=>`<div class="li" style="align-items:center"><span class="small num" style="width:52px">${fmtShort(e.date)}</span><div class="grow">${measTxt(e)}${ln(e)}${e.text?`<div class="d">${esc(e.text)}</div>`:''}</div><button class="icon-btn" data-act="del" data-store="entries" data-id="${e.id}" data-confirm aria-label="Löschen">✕</button></div>`).join('')}</div>`:''}
   </div></section>
-  <section><div class="sec-h"><span class="sec">Curing</span><button class="btn small" data-act="cureAdd">${IC.plus} Glas messen</button></div><div class="card stack">
-  ${cureStart?`<b>Tag ${daysBetween(cureStart,todayISO())+1} im Glas</b>`:'<p class="note">Trag Gläser ein, sobald die Blüten im Glas sind. Ideal sind 58–62 % Luftfeuchte im Glas.</p>'}
-  ${Object.keys(jars).length?`<div class="list">${Object.entries(jars).map(([k,l])=>{const e=l[l.length-1],s=cureStatus(e.rh);return `<div class="li" style="align-items:center"><div class="grow"><div class="t">${esc(k)}</div><div class="d">${fmtShort(e.date)} · ${e.rh?esc(e.rh)+' %':'–'}${e.w?` · ${fmtDE(parseNum(e.w),0)} g`:''} · ${plural(l.length,'Messung','Messungen')}</div></div>${s?`<span class="chip ${s[0]}">${esc(s[1])}</span>`:''}</div>`;}).join('')}</div>`:''}
-  <button class="btn small" data-act="burpTasks">Lüft-Erinnerungen anlegen</button>
-  <p class="note">Legt „Gläser lüften“ täglich an und erinnert dich nach 2 Wochen, auf wöchentlich umzustellen.</p>
+  <section><div class="sec-h"><span class="sec">Curing${sel?' · '+esc(sel.label):''}</span><button class="btn small" data-act="cureAdd">${IC.plus} Glas messen</button></div><div class="card stack">
+  ${Object.keys(jars).length?`<div class="list">${Object.entries(jars).map(([k,l])=>{const e=l[l.length-1],s=cureStatus(e.rh);return `<div class="li"><div class="grow stack" style="gap:4px"><div class="t">${esc(k)}</div><div class="d">${fmtShort(e.date)} · ${e.rh?esc(e.rh)+' %':'–'}${e.w?` · ${fmtDE(parseNum(e.w),0)} g`:''} · ${plural(l.length,'Messung','Messungen')}</div>${s?`<span class="chip ${s[0]}" style="white-space:normal;align-self:flex-start">${esc(s[1])}</span>`:''}</div></div>`;}).join('')}</div>`:'<p class="note">Trag Gläser ein, sobald die Blüten im Glas sind. Ideal sind 58–62 % Luftfeuchte im Glas.</p>'}
+  </div></section>
+  <section><div class="sec-h"><span class="sec">Lüft-Erinnerungen</span></div><div class="card stack">
+  ${I.phaseIdx<2&&!curePl.some(p=>p.cure)?'<p class="note">Die Lüft-Erinnerungen lassen sich einstellen, sobald der Run in der Blüte ist.</p>':curePl.map(p=>{
+    if(!p.cure)return `<div class="li" style="align-items:center"><div class="grow"><div class="t">${esc(p.label)}</div><div class="d">Noch kein Lüft-Plan</div></div><button class="btn small" data-act="cureOn" data-id="${p.id}">Plan starten</button></div>`;
+    const day=daysBetween(p.cure.start,todayISO())+1;
+    if(day<1)return `<div class="li" style="align-items:center"><div class="grow"><div class="t">${esc(p.label)}</div><div class="d">Start im Glas geplant: ${fmtDate(p.cure.start)}</div></div><button class="btn small ghost" data-act="cureOn" data-id="${p.id}">Ändern</button></div>`;
+    const pl=curePlan(day,lastCureRh(p)),t=cureTaskFor(p);
+    return `<div class="li" style="align-items:flex-start"><div class="grow stack" style="gap:4px"><div class="t">${esc(p.label)} · Tag ${day} im Glas</div><div class="small"><b>${esc(pl.pause?'Nicht lüften':pl.n>1?`2× täglich, je ${pl.min} Min.`:pl.every===1?`1× täglich, ${pl.min} Min.`:`alle ${pl.every} Tage, ${pl.min} Min.`)}</b>${t?` · nächste Erinnerung ${esc(fmtRel(t.due))}`:''}</div>${pl.warn?`<span class="chip ${pl.state==='ok'?'':pl.state}" style="white-space:normal;line-height:1.3">${esc(pl.warn)}</span>`:''}<div class="d">${esc(pl.tip)}${pl.hint?' '+esc(pl.hint):''}</div></div><button class="btn small ghost" data-act="cureOff" data-id="${p.id}" data-confirm>Beenden</button></div>`;
+  }).join('')}
+  <details class="note"><summary>So funktioniert der Plan</summary><p style="margin-top:6px">Tag 1–3: 2× täglich 10–15 Min. · Tag 4–7: täglich 10 Min. · Woche 2: alle 2 Tage 5–10 Min. · Woche 3: alle 3 Tage · bis Tag 30: wöchentlich · bis Tag 60: alle 2 Wochen · danach monatlich. Über 65 % Luftfeuchte wird auf 2× täglich umgestellt, unter 55 % pausiert – Grundlage ist deine letzte Glas-Messung (max. 3 Tage alt). Zusammengestellt aus gängigen Curing-Anleitungen; ideal sind 58–62 %.</p></details>
   </div></section>`;
 }
 function viewHarvest(){return viewHarvestBase()+dryCureHtml();}
@@ -2687,21 +2837,30 @@ function viewTrichCompare(){
     return `<div class="li"><div class="grow"><div class="t">${r?esc(r.name):'–'}${e.plantId?' · '+esc(plantName(e.plantId)):''}</div><div class="d">${fmtDate(e.date)} · ${triTxt(e.tri)}</div></div>${timing?`<span class="chip ${timing==='good'?'':'w'}">${esc(HARVEST_TIMING_L[timing])}</span>`:''}</div>`;
   }).join('')}</div></div></section>`;
 }
+function plantField(run,sel){const pl=runPlants(run);return pl.length>1?fld('Strain',selHTML('plantId',[['','Alle / gemeinsam'],...pl.map(p=>[p.id,p.label])],sel||'')):`<input type="hidden" name="plantId" value="${esc(pl[0]?.id||'')}">`;}
 function drySheet(){
   const run=activeRun();if(!run)return;
-  openSheet('Trocknung messen',`<div class="grid2">${fld('Datum',inp('date',todayISO(),'type="date"'))}${fld('Gewicht (g)',dec('w','','autofocus'))}</div><div class="grid2">${fld('Temperatur °C',dec('t',''))}${fld('Luftfeuchte %',dec('rh',''))}</div>${fld('Notiz',inp('note','','placeholder="z. B. Stängel biegen sich noch"'))}`,'Speichern',f=>{
+  openSheet('Trocknung messen',plantField(run,U.hvPlant)+`<div class="grid2">${fld('Datum',inp('date',todayISO(),'type="date"'))}${fld('Gewicht (g)',dec('w','','autofocus'))}</div><div class="grid2">${fld('Temperatur °C',dec('t',''))}${fld('Luftfeuchte %',dec('rh',''))}</div>${fld('Notiz',inp('note','','placeholder="z. B. Stängel biegen sich noch"'))}`,'Speichern',f=>{
     if(!f.w&&!f.t&&!f.rh){toast('Mindestens einen Wert angeben');return false;}
-    save('entries',{id:uid(),runId:run.id,date:f.date||todayISO(),type:'Trocknung',plantId:'',w:f.w.replace(',','.'),t:f.t.replace(',','.'),rh:f.rh.replace(',','.'),text:f.note,at:nowStamp()});toast('Gespeichert');});
+    save('entries',{id:uid(),runId:run.id,date:f.date||todayISO(),type:'Trocknung',plantId:f.plantId||'',w:f.w.replace(',','.'),t:f.t.replace(',','.'),rh:f.rh.replace(',','.'),text:f.note,at:nowStamp()});toast('Gespeichert');});
 }
 function cureSheet(){
   const run=activeRun();if(!run)return;
   const jars=[...new Set(S.entries.filter(e=>e.runId===run.id&&e.type==='Curing'&&e.jar).map(e=>e.jar))];
-  openSheet('Glas messen',`<datalist id="jarList">${jars.map(j=>`<option value="${esc(j)}">`).join('')}</datalist>
+  openSheet('Glas messen',plantField(run,U.hvPlant)+`<datalist id="jarList">${jars.map(j=>`<option value="${esc(j)}">`).join('')}</datalist>
   <div class="grid2">${fld('Glas',inp('jar',jars[0]||'Glas 1','list="jarList" autofocus'))}${fld('Datum',inp('date',todayISO(),'type="date"'))}</div>
   <div class="grid2">${fld('Luftfeuchte im Glas %',dec('rh',''))}${fld('Gewicht (g, optional)',dec('w',''))}</div>
   <label class="check"><input type="checkbox" name="burp" checked> Glas gelüftet</label>${fld('Notiz',inp('note','','placeholder="optional"'))}`,'Speichern',f=>{
     if(!f.jar){toast('Glas benennen');return false;}
-    save('entries',{id:uid(),runId:run.id,date:f.date||todayISO(),type:'Curing',plantId:'',jar:f.jar,rh:f.rh.replace(',','.'),w:f.w.replace(',','.'),burp:f.burp,text:f.note,at:nowStamp()});toast('Gespeichert');});
+    save('entries',{id:uid(),runId:run.id,date:f.date||todayISO(),type:'Curing',plantId:f.plantId||'',jar:f.jar,rh:f.rh.replace(',','.'),w:f.w.replace(',','.'),burp:f.burp,text:f.note,at:nowStamp()});
+    const ps=f.plantId?[byId('plants',f.plantId)]:runPlants(run);ps.forEach(p=>{if(p&&p.cure)cureRefresh(p);});
+    toast('Gespeichert');});
+}
+function cureOnSheet(p){
+  const run=byId('runs',p.runId),I=runInfo(run);
+  const guess=p.cure?.start||(I.phaseIdx>=5?todayISO():I.expHarvest?addDays(I.expHarvest,10):todayISO());
+  openSheet(`Lüft-Plan · ${p.label}`,fld('Start im Glas',inp('start',guess,'type="date"'))+`<p class="note">Die Trocknung dauert meist 7–14 Tage nach der Ernte. Liegt der Start in der Zukunft, beginnt die Erinnerung an diesem Tag. Danach passt sich der Plan jeden Tag an – und an deine Glas-Messungen.</p>`,'Plan starten',
+   d=>{cureStart(p,d.start||todayISO());toast('Lüft-Plan gestartet');});
 }
 
 /* ----- Verbrauch & Kosten ----- */
@@ -2728,8 +2887,7 @@ function costCalc(run){
   U1.items.forEach(it=>{const p=prices[it.name.toLowerCase()];const size=parseNum(p?.size),price=parseNum(p?.price);if(size>0&&price>=0&&!isNaN(price)){it.cost=it.amount/size*price;fert+=it.cost;}else fertKnown=false;});
   const pw=powerUse(run);const power=!isNaN(pw.kwh)&&kwhP>=0&&!isNaN(kwhP)?pw.kwh*kwhP:NaN;
   const ex=S.expenses.filter(e=>e.runId===run.id).sort((a,b)=>String(b.date).localeCompare(String(a.date)));const exSum=ex.reduce((s,e)=>s+(parseNum(e.amount)||0),0);
-  const plants=S.plants.filter(p=>p.runId===run.id);const dryPl=plants.map(p=>parseNum(p.review?.dry)).filter(n=>!isNaN(n));
-  const dry=!isNaN(parseNum(run.harvest?.dry))?parseNum(run.harvest.dry):(dryPl.length?dryPl.reduce((a,b)=>a+b,0):NaN);
+  const dry=runYield(run).dry;
   const total=fert+(isNaN(power)?0:power)+exSum;
   return {usage:U1,fert,fertKnown,pw,power,kwhP,ex,exSum,total,dry,perG:dry>0&&total>0?total/dry:NaN,prices};
 }
@@ -2788,58 +2946,84 @@ function feedSaveSheet(){
 }
 
 /* ----- Setup, Run, Pflanze (erweitert) ----- */
+function setupFields(s,pre=''){
+  return fld('Art',inp(pre+'kind',s?.kind||'','list="dlKinds" placeholder="z. B. Zelt, Pool, Gartenhaus"'))+
+   fld('Name',inp(pre+'name',s?.name||'',`${pre?'':'required autofocus '}placeholder="z. B. Zelt 120×120 Keller"`))+
+   `<div class="grid3">${fld('Länge cm',dec(pre+'w',s?.w??''))}${fld('Breite cm',dec(pre+'d',s?.d??''))}${fld('Licht W',dec(pre+'watt',s?.watt??''))}</div>`+
+   `<div class="grid2">${fld('Bewässerung',inp(pre+'irrigation',s?.irrigation||'','list="dlIrr" placeholder="auswählen oder eintippen"'))}${fld('Substrat',inp(pre+'medium',s?.medium||'','list="dlSub" placeholder="auswählen oder eintippen"'))}</div>`;
+}
+const setupDatalists=()=>dl('dlKinds',SETUP_KINDS)+dl('dlIrr',IRRIGATION)+dl('dlSub',SUBSTRATES);
 function setupSheet(s){
   openSheet(s?'Setup bearbeiten':'Neues Setup',
-   fld('Name',inp('name',s?.name||'','required autofocus'))+
-   `<div class="grid3">${fld('Breite cm',dec('w',s?.w??''))}${fld('Tiefe cm',dec('d',s?.d??''))}${fld('Licht W',dec('watt',s?.watt??''))}</div>`+
-   fld('Bewässerung',inp('irrigation',s?.irrigation||''))+
-   `<div class="grid3">${fld('Medium',inp('medium',s?.medium||''))}${fld('Topf L',dec('potL',s?.potL??''))}${fld('Tank L',dec('tankL',s?.tankL??''))}</div>`+
+   setupDatalists()+setupFields(s)+
+   `<p class="note">Für g/m² zählt nur Länge × Breite.</p>`+
+   `<div class="grid3">${fld('Höhe cm',dec('h',s?.h??''))}${fld('Topf L',dec('potL',s?.potL??''))}${fld('Tank L',dec('tankL',s?.tankL??''))}</div>`+
    fld('Sensoren & Technik',inp('sensors',s?.sensors||''))+
    `<span class="sec">Wasser</span><div class="grid3">${fld('EC Leitung',dec('waterEc',s?.waterEc??'','placeholder="z. B. 0.45"'))}${fld('pH Leitung',dec('waterPh',s?.waterPh??'','placeholder="z. B. 7.6"'))}${fld('Osmose %',dec('roPct',s?.roPct??'','placeholder="0–100"'))}</div>`+
    `<p class="note">Aus diesen Werten rechnet die App den EC deines Gießwassers. Canna-Pläne (EC+) werden damit automatisch auf den Gesamtwert umgerechnet.</p>`+
    `<span class="sec">Strom</span>${fld('Weitere Geräte im Dauerbetrieb (W)',dec('extraW',s?.extraW??'','placeholder="z. B. Abluft + Umluft 60"'))}`,
    'Speichern',
-   d=>{if(!d.name){toast('Name angeben');return false;}['waterEc','waterPh','roPct','w','d','watt','potL','tankL','extraW'].forEach(k=>{if(d[k])d[k]=d[k].replace(',','.');});const o=Object.assign(s||{id:uid(),pid:PID()},d);save('setups',o);U.tankL=null;toast('Setup gespeichert');});
+   d=>{if(!d.name){toast('Name angeben');return false;}['waterEc','waterPh','roPct','w','d','h','watt','potL','tankL','extraW'].forEach(k=>{if(d[k])d[k]=d[k].replace(',','.');});const o=Object.assign(s||{id:uid(),pid:PID()},d);save('setups',o);U.tankL=null;toast('Setup gespeichert');});
 }
 function runSheet(run){
-  const isNew=!run;
+  const isNew=!run,sets=mine('setups'),lib=mine('strains');
+  const col=run?runColor(run):nextRunColor();
   openSheet(isNew?'Neuer Run':'Run bearbeiten',
-   fld('Name',inp('name',run?.name||'','required autofocus placeholder="z. B. Herbst 2026"'))+
-   fld('Setup',selHTML('setupId',[['','– ohne –'],...mine('setups').map(s=>[s.id,s.name])],run?.setupId||mine('setups')[0]?.id||''))+
-   `<div class="grid2">${fld('Startdatum',inp('start',run?.start||todayISO(),'type="date" required'))}${isNew?fld('Startphase',selHTML('phase',PHASES.slice(0,3),'Keimung')):fld('Medium',inp('medium',run?.medium||''))}</div>`+
-   (isNew?fld('Medium',inp('medium','','placeholder="z. B. Kokos, Steinwolle"')):'')+
-   `<div class="grid2">${fld('Geplante Veg-Dauer (Wochen)',dec('planVegWeeks',run?.planVegWeeks??'','placeholder="z. B. 4"'))}${fld('Geplante Blütedauer (Tage)',dec('planBloomDays',run?.planBloomDays??'','placeholder="z. B. 63"'))}</div>`+
-   `<div class="grid2">${fld('Licht Veg (h/Tag)',dec('lightVeg',run?.lightVeg??'','placeholder="18"'))}${fld('Licht Blüte (h/Tag)',dec('lightBloom',run?.lightBloom??'','placeholder="12"'))}</div><p class="note">Dauern bestimmen Erntedatum und Hinweise, Lichtstunden die Stromschätzung.</p>`,
+   setupDatalists()+dl('dlLib',lib.map(s=>s.name))+
+   fld('Name',inp('name',run?.name||'','required autofocus placeholder="z. B. Blue Ivory"'))+
+   (isNew?`<p class="note" style="margin-top:-4px">Mit diesem Namen wird automatisch ein Strain angelegt. Gibt es ihn schon, kommt Monat/Jahr in Klammern dazu.</p>`+fld('Sorte aus deiner Genetik (optional)',inp('variety','','list="dlLib" placeholder="leer = Run-Name"')):'')+
+   `<div class="fld"><span>Farbe im Kalender</span>${colorPick('color',col)}</div>`+
+   fld('Setup',selHTML('setupId',[['','– ohne –'],...sets.map(s=>[s.id,s.name+(s.kind?' · '+s.kind:'')]),['__new','+ Neues Setup anlegen …']],run?.setupId||sets[0]?.id||'__new','id="runSetupSel"'))+
+   `<div id="runNewSetup" class="card stack" ${(run?.setupId||sets.length)?'hidden':''}>${setupFields(null,'ns_')}</div>`+
+   `<div class="grid2">${fld('Startdatum',inp('start',run?.start||todayISO(),'type="date" required'))}${isNew?fld('Startphase',selHTML('phase',PHASES.slice(0,3),'Keimung')):fld('Substrat',inp('medium',run?.medium||'','list="dlSub"'))}</div>`+
+   `<div class="grid2">${fld('Veg-Dauer (Wochen)',dec('planVegWeeks',run?.planVegWeeks??'','placeholder="z. B. 4"'))}${fld('Blütedauer (Tage)',dec('planBloomDays',run?.planBloomDays??'','placeholder="z. B. 63"'))}</div>`+
+   `<p class="note">Enddatum = Start + Veg-Dauer + Blütedauer. Fehlt eines der Felder, zeigt der Kalender nur den Startpunkt.</p>`+
+   `<div class="grid2">${fld('Licht Veg (h/Tag)',dec('lightVeg',run?.lightVeg??'','placeholder="18"'))}${fld('Licht Blüte (h/Tag)',dec('lightBloom',run?.lightBloom??'','placeholder="12"'))}</div>`,
    isNew?'Run anlegen':'Speichern',
    d=>{if(!d.name||!d.start){toast('Name und Startdatum angeben');return false;}
+     let setupId=d.setupId;
+     if(setupId==='__new'){
+       if(!d.ns_name&&!d.ns_kind){setupId='';}
+       else{const s={id:uid(),pid:PID(),kind:d.ns_kind,name:d.ns_name||d.ns_kind,w:d.ns_w.replace(',','.'),d:d.ns_d.replace(',','.'),watt:d.ns_watt.replace(',','.'),irrigation:d.ns_irrigation,medium:d.ns_medium};save('setups',s);setupId=s.id;}
+     }
      const num=k=>{const v=parseNum(d[k]);return v>0?v:'';};
-     const extra={planVegWeeks:num('planVegWeeks'),planBloomDays:num('planBloomDays')?Math.round(num('planBloomDays')):'',lightVeg:num('lightVeg'),lightBloom:num('lightBloom')};
-     if(isNew){const r={id:uid(),pid:PID(),name:d.name,setupId:d.setupId,start:d.start,medium:d.medium,phases:[{type:d.phase||'Keimung',date:d.start}],harvest:null,...extra};save('runs',r);setActiveRun(r.id);U.weekPlan=null;U.tankL=null;toast('Run angelegt');}
-     else{Object.assign(run,{name:d.name,setupId:d.setupId,start:d.start,medium:d.medium,...extra});delete run.example;save('runs',run);toast('Gespeichert');}
+     const extra={planVegWeeks:num('planVegWeeks'),planBloomDays:num('planBloomDays')?Math.round(num('planBloomDays')):'',lightVeg:num('lightVeg'),lightBloom:num('lightBloom'),color:d.color||col};
+     if(isNew){
+       const st=byId('setups',setupId);
+       const r={id:uid(),pid:PID(),name:d.name,setupId,start:d.start,medium:st?.medium||'',phases:[{type:d.phase||'Keimung',date:d.start}],harvest:null,...extra};save('runs',r);
+       const libS=strainByName(d.variety);
+       const p={id:uid(),pid:PID(),runId:r.id,label:uniquePlantLabel(d.name,d.start),strain:(libS?.name||d.variety||d.name).trim(),breeder:libS?.breeder||'',cut:'',source:'Samen',active:true};
+       save('plants',p);
+       if(libS&&!r.planBloomDays&&parseNum(libS.flower)>0){r.planBloomDays=Math.round(parseNum(libS.flower));save('runs',r);}
+       setActiveRun(r.id);U.weekPlan=null;U.tankL=null;U.hvPlant='';
+       toast(`Run angelegt · Strain „${p.label}“`);
+     }else{Object.assign(run,{name:d.name,setupId,start:d.start,medium:d.medium,...extra});delete run.example;const ph=sortedPhases(run);if(ph[0]&&ph[0].date>d.start)ph[0].date=d.start;save('runs',run);toast('Gespeichert');}
    });
 }
 function plantSheet(p){
-  const run=activeRun();if(!run)return;
-  const n=S.plants.filter(x=>x.runId===run.id).length+1,strains=mine('strains');
-  openSheet(p?'Pflanze bearbeiten':'Neue Pflanze',
+  const run=p?byId('runs',p.runId):activeRun();if(!run)return toast('Lege zuerst einen Run an');
+  const strains=mine('strains');
+  openSheet(p?'Strain bearbeiten':'Neuer Strain',
    `<datalist id="strainList">${strains.map(s=>`<option value="${esc(s.name)}">`).join('')}</datalist>`+
-   fld('Bezeichnung',inp('label',p?.label||`P${n}`,'required autofocus'))+
-   fld('Sorte',inp('strain',p?.strain||'','list="strainList" placeholder="aus deiner Genetik oder neu"'))+
+   fld('Bezeichnung',inp('label',p?.label||uniquePlantLabel(run.name,run.start),'required autofocus'))+
+   fld('Sorte (Genetik)',inp('strain',p?.strain||'','list="strainList" placeholder="aus deiner Genetik oder neu"'))+
    `<div class="grid2">${fld('Breeder',inp('breeder',p?.breeder||''))}${fld('Cut / Pheno',inp('cut',p?.cut||''))}</div>`+
-   `<div class="grid2">${fld('Herkunft',selHTML('source',['Samen','Steckling'],p?.source||'Samen'))}${fld('Status',selHTML('active',[['1','aktiv'],['0','inaktiv']],p&&!p.active?'0':'1'))}</div>`+
+   `<div class="grid2">${fld('Herkunft',selHTML('source',['Samen','Steckling'],p?.source||'Samen'))}${fld('Status',selHTML('active',[['1','aktiv'],['0','inaktiv']],p&&p.active===false?'0':'1'))}</div>`+
+   `<div class="grid2">${fld('Topf (L)',dec('potL',p?.potL??''))}${fld('Keimung/Steckling am',inp('born',p?.born||'','type="date"'))}</div>`+
+   fld('Notizen',`<textarea name="notes" placeholder="Wuchs, Geruch, Besonderheiten …">${esc(p?.notes||'')}</textarea>`)+
    (!p&&strains.some(s=>parseNum(s.seeds)>0)?`<label class="check"><input type="checkbox" name="useSeed" checked> Samen aus dem Bestand abziehen (wenn Sorte aus der Genetik)</label>`:'')+
-   (p?`<button type="button" class="btn danger" data-act="del" data-store="plants" data-id="${p.id}" data-confirm>Pflanze löschen</button>`:''),
+   (p?`<button type="button" class="btn danger" data-act="del" data-store="plants" data-id="${p.id}" data-confirm>Strain löschen</button>`:''),
    'Speichern',
    d=>{
      if(!d.label){toast('Bezeichnung angeben');return false;}
-     const isNew=!p;
-     const s=strainByName(d.strain);let msg='Pflanze gespeichert';
+     const isNew=!p,label=isNew?uniquePlantLabel(d.label,run.start):d.label;
+     const s=strainByName(d.strain);let msg='Strain gespeichert';
      if(s&&!d.breeder)d.breeder=s.breeder||'';
-     const o=Object.assign(p||{id:uid(),runId:run.id},{label:d.label,strain:d.strain,breeder:d.breeder,cut:d.cut,source:d.source,active:d.active==='1'});
+     const o=Object.assign(p||{id:uid(),runId:run.id},{label,strain:d.strain,breeder:d.breeder,cut:d.cut,source:d.source,active:d.active==='1',potL:d.potL,born:d.born,notes:d.notes});
      save('plants',o);
-     if(isNew){U.photoPlant=o.id;U.mKind='all';msg+=' · Medien-Filter ist schon auf diese Pflanze eingestellt';}
+     if(isNew){U.photoPlant=o.id;U.mKind='all';}
      if(s){
-       if(!p&&d.useSeed&&d.source==='Samen'&&parseNum(s.seeds)>0){s.seeds=String(parseNum(s.seeds)-1);save('strains',s);msg=`Gespeichert · noch ${s.seeds} Samen`;}
+       if(isNew&&d.useSeed&&d.source==='Samen'&&parseNum(s.seeds)>0){s.seeds=String(parseNum(s.seeds)-1);save('strains',s);msg=`Gespeichert · noch ${s.seeds} Samen`;}
        if(!run.planBloomDays&&parseNum(s.flower)>0){run.planBloomDays=Math.round(parseNum(s.flower));save('runs',run);msg+=` · Blütedauer ${run.planBloomDays} Tage übernommen`;}
      }
      toast(msg);
@@ -2887,13 +3071,16 @@ function seedLibHits(q){
 const strainByName=n=>{const k=String(n||'').trim().toLowerCase();return k?mine('strains').find(s=>s.name.trim().toLowerCase()===k):null;};
 function strainHist(s){
   const k=s.name.trim().toLowerCase();
-  const pl=S.plants.filter(p=>p.pid===PID()&&String(p.strain||'').trim().toLowerCase()===k);
+  const pl=myPlants().filter(p=>String(p.strain||p.label||'').trim().toLowerCase()===k);
   const runs=[...new Set(pl.map(p=>p.runId))].map(id=>byId('runs',id)).filter(Boolean);
-  const dry=pl.map(p=>parseNum(p.review?.dry)).filter(v=>!isNaN(v)),rat=pl.map(p=>avgRating(p.review)).filter(v=>v>0);
+  const dry=pl.map(plantDry).filter(v=>!isNaN(v)),rat=pl.map(p=>avgRating(p.review)).filter(v=>v>0);
   return {pl,runs,dry:dry.length?dry.reduce((a,b)=>a+b,0)/dry.length:NaN,rating:rat.length?rat.reduce((a,b)=>a+b,0)/rat.length:0};
 }
+/* Rangliste über ALLE je gegrowten Strains (auch archiviert), gruppiert nach Sorte – nicht nur Sorten aus der Genetik */
 function strainRank(){
-  return mine('strains').map(s=>({s,h:strainHist(s)})).filter(x=>x.h.rating>0).sort((a,b)=>b.h.rating-a.h.rating);
+  const g={};
+  myPlants().forEach(p=>{const rt=avgRating(p.review);if(!rt)return;const name=(p.strain||p.label).trim(),k=name.toLowerCase();(g[k]=g[k]||{name,r:[],pl:[]}).r.push(rt);g[k].pl.push(p);});
+  return Object.values(g).map(x=>({name:x.name,s:strainByName(x.name),pl:x.pl,h:{rating:x.r.reduce((a,b)=>a+b,0)/x.r.length,n:x.r.length}})).sort((a,b)=>b.h.rating-a.h.rating);
 }
 function viewStrains(){
   const list=mine('strains').map(s=>({s,h:strainHist(s)})).sort((a,b)=>b.h.rating-a.h.rating||a.s.name.localeCompare(b.s.name,'de')).map(x=>x.s);
@@ -2902,10 +3089,10 @@ function viewStrains(){
   ${list.length?list.map((s,i)=>{const h=strainHist(s),cuts=(s.cuts||[]).reduce((a,c)=>a+(+c.n||0),0),medal=h.rating>0&&i<3?['🥇','🥈','🥉'][i]:'';return `<section class="card stack" style="gap:8px">
     <div class="row between"><div class="grow"><b style="font-size:17px">${medal?medal+' ':''}${esc(s.name)}</b><div class="small muted">${esc([s.breeder,s.kind,s.gen,s.flower?`${s.flower} Tage Blüte`:''].filter(Boolean).join(' · ')||'Keine Details')}</div></div><button class="btn small" data-act="strainEdit" data-id="${s.id}">Bearbeiten</button></div>
     <div class="row">${parseNum(s.seeds)>0?`<span class="chip">${plural(parseNum(s.seeds),'Samen','Samen')}</span>`:'<span class="chip n">keine Samen</span>'}${s.mother?`<span class="chip v">Mutter seit ${s.motherSince?fmtShort(s.motherSince):'?'}</span>`:''}${cuts?`<span class="chip l">${plural(cuts,'Steckling','Stecklinge')} genommen</span>`:''}</div>
-    <p class="small">${h.pl.length?`${plural(h.pl.length,'Pflanze','Pflanzen')} in ${plural(h.runs.length,'Run','Runs')}${!isNaN(h.dry)?` · Ø ${fmtDE(h.dry,0)} g trocken`:''}${h.rating?` · ${stars(h.rating)} ${fmtDE(h.rating,1)}`:''}`:'Noch nicht gegrowt'}</p>
+    <p class="small">${h.pl.length?`${plural(h.pl.length,'Strain','Strains')} in ${plural(h.runs.length,'Run','Runs')}${!isNaN(h.dry)?` · Ø ${fmtDE(h.dry,0)} g trocken`:''}${h.rating?` · ${stars(h.rating)} ${fmtDE(h.rating,1)}`:''}`:'Noch nicht gegrowt'}</p>
     ${s.notes?`<p class="note">${esc(s.notes)}</p>`:''}
     ${s.mother?`<div class="row"><button class="btn small" data-act="cutAdd" data-id="${s.id}">Stecklinge genommen</button></div>`:''}
-  </section>`;}).join(''):`<div class="card empty"><p class="muted">Lege deine Sorten an – mit Breeder, Blütedauer, Samenbestand und Mutterpflanzen. Pflanzen mit gleicher Sorte werden automatisch über alle Runs ausgewertet.</p><button class="btn primary" data-act="strainNew">Sorte anlegen</button></div>`}
+  </section>`;}).join(''):`<div class="card empty"><p class="muted">Lege deine Sorten an – mit Breeder, Blütedauer, Samenbestand und Mutterpflanzen. Strains mit gleicher Sorte werden automatisch über alle Runs ausgewertet.</p><button class="btn primary" data-act="strainNew">Sorte anlegen</button></div>`}
   ${known.length?`<section><div class="sec-h"><span class="sec">Aus deinen Runs, noch nicht in der Genetik</span></div><div class="card"><div class="list">${known.map(n=>`<div class="li" style="align-items:center"><span class="grow">${esc(n)}</span><button class="btn small" data-act="strainFrom" data-n="${esc(n)}">Übernehmen</button></div>`).join('')}</div></div></section>`:''}
   <section><div class="sec-h"><span class="sec">Samenbank-Referenz</span></div>
   <div class="card stack" style="gap:10px">
@@ -3015,7 +3202,6 @@ Object.assign(A,{
   quickShot:()=>{U.steerDate=todayISO();steerSheet('shot');},
   quickRead:()=>{U.steerDate=todayISO();steerSheet('read');},
   dryAdd:()=>drySheet(), cureAdd:()=>cureSheet(),
-  burpTasks:()=>{const run=activeRun();if(!run)return;save('tasks',{id:uid(),runId:run.id,title:'Gläser lüften',type:'Curing',plantId:'',due:todayISO(),every:1,done:false});save('tasks',{id:uid(),runId:run.id,title:'Lüften auf wöchentlich umstellen',type:'Notiz',plantId:'',due:addDays(todayISO(),14),every:0,done:false});toast('Erinnerungen angelegt');render();},
   meterAdd:()=>meterSheet(), expAdd:()=>expenseSheet(),
   strainNew:()=>strainSheet(null), strainEdit:el=>strainSheet(byId('strains',el.dataset.id)), strainFrom:el=>strainSheet(null,el.dataset.n), cutAdd:el=>cutSheet(el.dataset.id),
   strainFromLib:el=>{const lib=SEED_LIB.find(x=>x.name===el.dataset.n);strainSheet(null,null,lib);},
@@ -3025,6 +3211,8 @@ Object.assign(A,{
 });
 document.addEventListener('change',e=>{
   const el=e.target;
+  if(el.id==='hvTiming'){const run=activeRun();if(run){run.harvest={...(run.harvest||{}),timing:el.value};save('runs',run);toast('Gespeichert');}return;}
+  if(el.id==='runSetupSel'){const b=$('#runNewSetup');if(b)b.hidden=el.value!=='__new';return;}
   if(el.id==='steerDate'&&el.value){U.steerDate=el.value;render();return;}
   if(el.id==='kwhPrice'){putSet('kwh',el.value.replace(',','.').trim());render();return;}
   if(el.dataset.price!==undefined){const pr={...getSet('prices',{})};const k=el.dataset.price;pr[k]={...(pr[k]||{}),[el.dataset.f]:el.value.replace(',','.').trim()};putSet('prices',pr);render();return;}
@@ -3160,7 +3348,7 @@ window.addEventListener('online',()=>{if(sbUser){sbFlushPush();sbPullAll();}});
 function cloudSection(){
   const cm=cloudMeta()[PID()];
   if(!sbUser)return `<section><div class="sec-h"><span class="sec">Cloud-Sync</span></div><div class="card stack">
-    <p class="small">Melde dich an, um Journal, Pflanzen, Pläne und Aufgaben dieses Profils geräteübergreifend zu synchronisieren. Fotos und Videos bleiben nur auf diesem Gerät.</p>
+    <p class="small">Melde dich an, um Journal, Strains, Pläne und Aufgaben dieses Profils geräteübergreifend zu synchronisieren. Fotos und Videos bleiben nur auf diesem Gerät.</p>
     <p class="note">Die Daten liegen dann unverschlüsselt auf dem Server (geschützt durch dein Konto). Für streng vertrauliche Angaben nicht geeignet.</p>
     ${cm?`<p class="small warn-txt">Zuletzt verbunden mit ${esc(cm.email||'')}. ${sb?'Anmeldung abgelaufen – bitte neu anmelden.':'Verbinde …'}</p>`:''}
     ${sbLastErr?`<p class="small warn-txt">${esc(sbLastErr)}</p>`:''}
