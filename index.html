@@ -10,11 +10,21 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="Zeltbuch">
+<meta name="referrer" content="strict-origin-when-cross-origin">
 <title>Zeltbuch</title>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script>
+/* Content-Security-Policy nur außerhalb der Claude-Umgebung (dort würde sie die Claude-Schnittstellen blockieren).
+   Begrenzt, wohin die App Daten schicken darf: nur Supabase, Bilder nur von Unsplash. */
+(function(){try{if(/claude|anthropic/i.test(location.hostname)||location.protocol==='file:')return;
+  var m=document.createElement('meta');m.httpEquiv='Content-Security-Policy';
+  m.content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob: https://images.unsplash.com; media-src 'self' blob:; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://cdn.jsdelivr.net https://images.unsplash.com; worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'";
+  document.head.appendChild(m);}catch(e){}})();
+</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=IBM+Plex+Mono:wght@500;600&family=Sedgwick+Ave+Display&display=swap" rel="stylesheet">
+<link rel="preconnect" href="https://images.unsplash.com">
+<link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=IBM+Plex+Mono:wght@500;600&family=Sedgwick+Ave+Display&display=swap">
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=IBM+Plex+Mono:wght@500;600&family=Sedgwick+Ave+Display&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
 <style>
 :root{
   --bg:#F1F4EF; --surface:#FFFFFF; --surface2:#F6F8F4; --ink:#17211A; --muted:#5B6860; --line:#E0E6DC; --line2:#C9D2C4;
@@ -301,6 +311,52 @@ table.rep tr:last-child th,table.rep tr:last-child td{border-bottom:0}
 .banner.ok{background:var(--accent-soft)}
 .toast{position:fixed;left:50%;bottom:calc(144px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 14px;border-radius:12px;font-size:14px;z-index:100;opacity:0;pointer-events:none;transition:opacity .2s;max-width:calc(100% - 32px);text-align:center}
 .toast.show{opacity:1}
+/* v8: Touch, Blog, Upload */
+html{-webkit-tap-highlight-color:transparent}
+.sheet-card,.viewer{overscroll-behavior:contain}
+body.noscroll{overflow:hidden}
+.search{position:relative}
+.search input{padding-left:38px}
+.search .pi{position:absolute;left:11px;top:12px;color:var(--muted)}
+.chips{display:flex;gap:6px;overflow-x:auto;padding-bottom:4px;margin-inline:-16px;padding-inline:16px;scrollbar-width:none}
+.chips::-webkit-scrollbar{display:none}
+.chips button{flex:none;border:1px solid var(--line2);background:var(--surface);color:var(--ink);border-radius:99px;padding:7px 12px;font:700 13px var(--body);min-height:36px}
+.chips button[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.btiles{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.btile{position:relative;display:flex;flex-direction:column;justify-content:flex-end;min-height:168px;padding:0;border:0;border-radius:var(--r);overflow:hidden;text-align:left;color:#fff;background:var(--accent) linear-gradient(135deg,#2B7A4B,#17211A);box-shadow:var(--shadow);font:inherit;cursor:pointer;isolation:isolate}
+.btile.wide{grid-column:1/-1;min-height:210px}
+.btile img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:-2;transition:transform .35s}
+.btile:hover img{transform:scale(1.04)}
+.btile::after{content:"";position:absolute;inset:0;z-index:-1;background:linear-gradient(180deg,rgba(8,14,10,0) 30%,rgba(8,14,10,.82) 100%)}
+.btile .bt-in{padding:12px;display:flex;flex-direction:column;gap:4px}
+.btile .bt-cat{align-self:flex-start;font:700 11px/1 var(--body);letter-spacing:.06em;text-transform:uppercase;background:rgba(255,255,255,.18);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);padding:5px 7px;border-radius:6px}
+.btile b{font-size:16px;line-height:1.2;text-wrap:balance;hyphens:auto;-webkit-hyphens:auto;overflow-wrap:anywhere;text-shadow:0 1px 8px rgba(0,0,0,.35)}
+.btile.wide b{font-size:20px}
+.btile .bt-m{font-size:12px;opacity:.85}
+.art-hero{position:relative;margin-inline:-16px;height:230px;overflow:hidden;background:linear-gradient(135deg,#2B7A4B,#17211A)}
+.art-hero img{width:100%;height:100%;object-fit:cover;display:block}
+.art-hero .credit{position:absolute;right:8px;bottom:8px;font-size:11px;background:rgba(0,0,0,.55);color:#fff;padding:3px 6px;border-radius:6px;text-decoration:none}
+.art{display:flex;flex-direction:column;gap:14px}
+.art h2{font-size:25px;line-height:1.2}
+.art .lead{font-size:17px;color:var(--muted)}
+.art p{line-height:1.6;font-size:16.5px}
+.art h3{font-size:18px;margin-top:6px}
+.art ul{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:6px;line-height:1.5}
+.ilink{display:inline;border:0;background:none;padding:0;font:inherit;text-align:left;color:var(--accent);font-weight:700;text-decoration:underline;text-decoration-thickness:1.5px;text-underline-offset:3px;cursor:pointer}
+.keyfacts{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.keyfacts>div{background:var(--surface2);border:1px solid var(--line);border-radius:12px;padding:10px}
+.keyfacts .k{font:700 11px var(--body);letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.picker{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.pick-btn{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;min-height:92px;border:1.5px dashed var(--line2);border-radius:14px;background:var(--surface);color:var(--ink);font:700 15px var(--body);cursor:pointer;text-align:center;padding:10px}
+.pick-btn .pi{width:28px;height:28px;color:var(--accent)}
+.pick-btn:active,.picker.drag .pick-btn{background:var(--accent-soft);border-color:var(--accent)}
+.pv{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.pv figure{margin:0;position:relative;aspect-ratio:1;border-radius:10px;overflow:hidden;background:var(--surface2)}
+.pv img{width:100%;height:100%;object-fit:cover;display:block}
+.pv .x{position:absolute;right:3px;top:3px;width:26px;height:26px;border-radius:50%;border:0;background:rgba(0,0,0,.6);color:#fff;font-size:13px;display:grid;place-items:center}
+.pv .vtag{position:absolute;left:4px;bottom:4px;font:700 10px/1 var(--body);background:rgba(0,0,0,.6);color:#fff;padding:3px 5px;border-radius:5px}
+.mgrid button.missing::after{content:"Bild fehlt";position:absolute;inset:0;display:grid;place-items:center;font-size:11px;color:var(--muted)}
+@media (min-width:560px){.btiles{grid-template-columns:repeat(3,1fr)}.btile.wide{grid-column:span 2}}
 @media (max-width:380px){.grid3{grid-template-columns:1fr 1fr}.hero{grid-template-columns:72px 1fr}.illo.lg{width:72px;height:72px}.day{font-size:28px}.cal .d .rd{display:none}.pad{grid-template-columns:repeat(3,66px)}.pad button{height:66px}}
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
 </style>
@@ -378,6 +434,8 @@ function openDB(){return new Promise((res,rej)=>{let r;try{r=indexedDB.open('zel
   r.onupgradeneeded=()=>{const db=r.result;ALL_STORES.forEach(s=>{if(!db.objectStoreNames.contains(s))db.createObjectStore(s,{keyPath:'id'});});};
   r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error);r.onblocked=()=>rej(new Error('blocked'));});}
 function dbAll(s){if(!idb)return Promise.resolve([]);return new Promise((res,rej)=>{try{const q=idb.transaction(s).objectStore(s).getAll();q.onsuccess=()=>res(q.result||[]);q.onerror=()=>rej(q.error);}catch(e){rej(e);}});}
+/* Liest mehrere Stores in EINER Transaktion – deutlich schneller beim Start als nacheinander */
+function dbAllMany(stores){if(!idb)return Promise.resolve({});return new Promise((res,rej)=>{try{const t=idb.transaction(stores),out={};stores.forEach(s=>{const q=t.objectStore(s).getAll();q.onsuccess=()=>{out[s]=q.result||[];};});t.oncomplete=()=>res(out);t.onerror=()=>rej(t.error);t.onabort=()=>rej(t.error);}catch(e){rej(e);}});}
 function dbGet(s,id){if(!idb)return Promise.resolve(MEM_MEDIA.get(id)||null);return new Promise((res,rej)=>{try{const q=idb.transaction(s).objectStore(s).get(id);q.onsuccess=()=>res(q.result||null);q.onerror=()=>rej(q.error);}catch(e){rej(e);}});}
 function dbDo(s,fn){if(!idb)return Promise.resolve();return new Promise((res,rej)=>{try{const t=idb.transaction(s,'readwrite');fn(t.objectStore(s));t.oncomplete=()=>res();t.onerror=()=>rej(t.error);t.onabort=()=>rej(t.error);}catch(e){rej(e);}});}
 const MEM_MEDIA=new Map();
@@ -420,13 +478,18 @@ async function loadMedia(id){
 async function mediaURL(id){if(MEDIA_URL.has(id))return MEDIA_URL.get(id);let b=null;try{b=await loadMedia(id);}catch(e){console.error(e);}if(!b)return '';const u=URL.createObjectURL(b);MEDIA_URL.set(id,u);return u;}
 function dropMediaURLs(){MEDIA_URL.forEach(u=>URL.revokeObjectURL(u));MEDIA_URL.clear();}
 function removeMedia(id){const ids=[id,id+'_t'];ids.forEach(k=>{const u=MEDIA_URL.get(k);if(u){URL.revokeObjectURL(u);MEDIA_URL.delete(k);}MEM_MEDIA.delete(k);});return enqueue(()=>dbDo('media',st=>ids.forEach(k=>st.delete(k))));}
+async function loadMediaEl(el){
+  if(el.dataset.loaded)return;el.dataset.loaded='1';
+  let u=await mediaURL(el.dataset.media);
+  if(!u&&el.dataset.fallback)u=await mediaURL(el.dataset.fallback);
+  if(!u){el.closest('button')?.classList.add('missing');return;}
+  if(el.isConnected)el.src=u;
+}
+/* Lädt (und entschlüsselt) Bilder erst, wenn sie in die Nähe des sichtbaren Bereichs kommen */
+const mediaIO='IntersectionObserver' in window?new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting){mediaIO.unobserve(e.target);loadMediaEl(e.target);}}),{rootMargin:'300px 0px'}):null;
 function hydrateMedia(root=document){
-  $$('[data-media]:not([data-loaded])',root).forEach(async el=>{
-    el.dataset.loaded='1';
-    let u=await mediaURL(el.dataset.media);
-    if(!u&&el.dataset.fallback)u=await mediaURL(el.dataset.fallback);
-    if(!u){el.closest('button')?.classList.add('missing');return;}
-    if(el.isConnected)el.src=u;
+  $$('[data-media]:not([data-loaded])',root).forEach(el=>{
+    if(mediaIO&&el.tagName==='IMG'&&!el.closest('.viewer'))mediaIO.observe(el);else loadMediaEl(el);
   });
 }
 
@@ -441,14 +504,21 @@ const initials=n=>(String(n||'?').trim().split(/\s+/).map(w=>w[0]).join('').slic
 const avatar=(p,sz=32)=>`<span class="avatar" style="background:${esc(p?.color||PCOLORS[0])};width:${sz}px;height:${sz}px;font-size:${Math.round(sz*.4)}px">${p?.avatar?`<img src="${esc(p.avatar)}" alt="">`:esc(initials(p?.name))}</span>`;
 const isLocked=p=>!!(p&&(p.enc||p.pinHash));
 function newProfile(name,color){const p={id:uid(),name:name||'Mein Profil',color:color||PCOLORS[S.profiles.length%PCOLORS.length],created:nowStamp(),autoLock:2};save('profiles',p);return p;}
-async function reloadEnc(){for(const st of REC_STORES){try{ENC[st]=(await dbAll(st)).filter(r=>r._e);}catch(e){ENC[st]=[];}}}
+async function reloadEnc(){let all={};try{all=await dbAllMany(REC_STORES);}catch(e){}for(const st of REC_STORES)ENC[st]=(all[st]||[]).filter(r=>r._e);}
+/* Entschlüsselt alle Datensätze eines Profils parallel (statt einzeln nacheinander) */
+async function decryptAll(pid,key){
+  const jobs=[];
+  for(const st of REC_STORES)for(const r of ENC[st])if(r.pid===pid)jobs.push([st,r]);
+  const out=await Promise.all(jobs.map(([st,r])=>decBytes(key,r.iv,r.ct).then(b=>[st,JSON.parse(td.decode(b))]).catch(()=>{console.error('Entschlüsseln fehlgeschlagen',st,r.id);return null;})));
+  out.forEach(x=>{if(x)upsertMem(x[0],x[1]);});
+}
 async function unlock(pid,secret){
   const p=byId('profiles',pid);if(!p)return false;
   if(p.enc&&p.lock){
     let key;
     try{key=await deriveKey(secret,unb64(p.lock.salt),p.lock.iter);const chk=await decBytes(key,unb64(p.lock.iv),unb64(p.lock.check));if(td.decode(chk)!=='zeltbuch-ok')return false;}catch(e){return false;}
     KEYS[pid]=key;
-    for(const st of REC_STORES){for(const r of ENC[st].filter(x=>x.pid===pid)){try{upsertMem(st,JSON.parse(td.decode(await decBytes(key,r.iv,r.ct))));}catch(e){console.error('Entschlüsseln fehlgeschlagen',st,r.id);}}}
+    await decryptAll(pid,key);
     return true;
   }
   if(p.pinHash){
@@ -480,7 +550,7 @@ async function setLock(pid,secret,type,onProg){
   await save('profiles',p);
   const recs=REC_STORES.flatMap(st=>S[st].filter(x=>x.pid===pid).map(o=>[st,o]));
   const total=recs.length+mIds.length;let n=0;
-  for(const [st,o] of recs){save(st,o);if(++n%25===0&&onProg)onProg(n/total);}
+  for(const [st,o] of recs){save(st,o,true);if(++n%25===0&&onProg)onProg(n/total);}
   await flush();
   for(const id of mIds){
     const row=await dbGet('media',id);if(!row)continue;
@@ -492,12 +562,16 @@ async function setLock(pid,secret,type,onProg){
   await flush();await reloadEnc();
 }
 function purgeProfileData(pid){
+  U.noPush=true; /* lokales Löschen eines Profils löscht NICHT die Cloud-Daten */
   S.runs.filter(r=>r.pid===pid).forEach(r=>{cascadeRun(r.id);remove('runs',r.id);});
   ['setups','plans','strains','settings'].forEach(s=>S[s].filter(x=>x.pid===pid).forEach(x=>remove(s,x.id)));
   enqueue(async()=>{
     for(const st of REC_STORES){const rows=(await dbAll(st)).filter(r=>r.pid===pid);if(rows.length)await dbDo(st,o=>rows.forEach(r=>o.delete(r.id)));}
     const mr=(await dbAll('media')).filter(r=>r.pid===pid);if(mr.length)await dbDo('media',o=>mr.forEach(r=>o.delete(r.id)));
   });
+  U.noPush=false;
+  if(META.cloud&&META.cloud[pid]){delete META.cloud[pid];try{localStorage.removeItem('zb-sb-'+pid);}catch(e){}}
+  if(sbPid===pid)sbStop();
 }
 async function deleteProfile(pid){purgeProfileData(pid);delete KEYS[pid];remove('profiles',pid);if(META.runBy)delete META.runBy[pid];if(META.fails)delete META.fails[pid];if(META.activeProfile===pid){const o=S.profiles[0]||newProfile();META.activeProfile=o.id;}saveMeta();await flush();await reloadEnc();}
 function failState(pid){const f=(META.fails||{})[pid]||{n:0,until:0};return f;}
@@ -783,7 +857,7 @@ function taskDates(t,from,to){
   const ev=+t.every||0;
   if(!ev){if(t.due>=from&&t.due<=to)out.push(t.due);return out;}
   let d=t.due;
-  if(d<from){const k=Math.ceil(daysBetween(d,from)/ev);d=addDays(d,k*ev);if(t.due>=from)d=t.due;}
+  if(d<from){const k=Math.ceil(daysBetween(d,from)/ev);d=addDays(d,k*ev);}
   while(d<=to&&out.length<62){if(d>=from)out.push(d);d=addDays(d,ev);}
   return out;
 }
@@ -866,11 +940,34 @@ function openSheet(title,body,label,onSubmit){
   $('#sheetTitle').textContent=title;
   $('#sheetBody').innerHTML=body+(label?`<button class="btn primary block" type="submit">${esc(label)}</button>`:'');
   sheetSubmit=onSubmit;U.sheetKind=null;
-  const sh=$('#sheet');sh.classList.toggle('over',U.locked);sh.hidden=false;
+  const sh=$('#sheet');sh.classList.toggle('over',U.locked);sh.hidden=false;document.body.classList.add('noscroll');
+  if(!U.locked)histMark('sheet');
   hydrateMedia($('#sheetBody'));
   setTimeout(()=>{const f=$('#sheetBody [autofocus]');if(f)f.focus();},40);
 }
-function closeSheet(){$('#sheet').hidden=true;sheetSubmit=null;U.sheetKind=null;$('#sheetBody').innerHTML='';}
+function closeSheet(opt={}){
+  const wasOpen=!$('#sheet').hidden;
+  $('#sheet').hidden=true;sheetSubmit=null;U.sheetKind=null;$('#sheetBody').innerHTML='';document.body.classList.remove('noscroll');
+  Object.keys(PICKED).forEach(k=>{if(!document.querySelector(`#main [data-pick="${k}"]`)){delete PICKED[k];(PV_URLS.get(k)||[]).forEach(u=>URL.revokeObjectURL(u));PV_URLS.delete(k);}});
+  if(wasOpen&&!opt.noHist)histUnmark('sheet');
+}
+/* ---------- Verlauf: Android-Zurück-Taste schließt Dialoge und geht Seiten zurück, statt die App zu verlassen ---------- */
+let popSkip=0;
+const hs=()=>history.state||{};
+function histMark(k){try{if(!hs()[k])history.pushState({...hs(),[k]:1},'');}catch(e){}}
+function histUnmark(k){try{if(hs()[k]){popSkip++;history.back();}}catch(e){}}
+const overlayOpen=()=>!$('#viewer').hidden;
+function closeOverlay(){if(U.tl&&U.tl.open){tlStop();U.tl.open=false;$('#viewer').hidden=true;$('#viewer').innerHTML='';}else{U.viewer=null;U.compare=null;renderViewer();render();}}
+window.addEventListener('popstate',e=>{
+  if(popSkip>0){popSkip--;if(!$('#sheet').hidden)histMark('sheet');else if(overlayOpen())histMark('ov');return;}
+  if(U.locked)return;
+  if(!$('#sheet').hidden){closeSheet({noHist:true});return;}
+  if(overlayOpen()){closeOverlay();return;}
+  const st=e.state||{s:'home'};
+  U.screen=st.s||'home';if(st.a)U.article=st.a;if(U.screen!=='feed')U.feedView='calc';
+  render();window.scrollTo(0,0);
+});
+document.addEventListener('keydown',e=>{if(e.key!=='Escape')return;if(!$('#sheet').hidden){if(hs().sheet)history.back();else closeSheet();}else if(overlayOpen()){if(hs().ov)history.back();else closeOverlay();}});
 $('#sheetForm').addEventListener('submit',e=>{
   e.preventDefault();if(!sheetSubmit)return;
   const f=e.target;const fd={};new FormData(f).forEach((v,k)=>{if(!(v instanceof File))fd[k]=typeof v==='string'?v.trim():v;});
@@ -923,10 +1020,10 @@ function trichSheet(taskId){
    async(d,f)=>{
      const t={c:+d.c||0,m:+d.m||0,a:+d.a||0};
      const id=uid();const entry={id,runId:run.id,date:d.date||todayISO(),type:'Trichome',plantId:d.plantId,tri:t,text:d.note,at:nowStamp()};
-     const file=$('input[type=file]',f)?.files?.[0];
+     const file=pickedFiles('triPhotoFile')[0];
      if(file){
        try{
-         const big=await compress(file,1600,0.82),th=await compress(file,400,0.72);
+         const [big,th]=await imageVariants(file,[[1600,0.82],[400,0.72]]);
          const pid=uid();await saveMedia(pid,PID(),big);await saveMedia(pid+'_t',PID(),th);
          save('photos',{id:pid,runId:run.id,plantId:d.plantId,date:entry.date,note:'Trichom-Check',kind:'image',tri:true,entryId:id,size:big.size,orig:file.size,thumb:true,at:nowStamp()});
          entry.photoId=pid;
@@ -995,11 +1092,11 @@ function libSheet(){
   <h3 class="sec">Athena</h3><div class="card"><div class="list"><div class="li"><div class="grow"><div class="t">Athena Blended – deine Variante</div><div class="d">Dein angepasster Plan (Woche 7–9 gleich, 1 Tag Flush). Den offiziellen Athena-Plan veröffentlicht Athena nur als Grafik – lies ihn unten per Foto ein.</div></div><button type="button" class="btn small" data-act="planAthena">Übernehmen</button></div></div></div>
   <h3 class="sec">Plan aus Foto oder Screenshot</h3>
   <div class="card stack"><p class="note">Für BioBizz, Athena, Hesi und jeden anderen Hersteller: Screenshot oder Foto des offiziellen Plans wählen. Claude liest die Tabelle aus und öffnet sie im Editor. Prüf danach jede Zahl mit dem Original.</p>
-  ${SAMPLE&&SAMPLE_IMG?`${filePick('aiPlanFile','aiPlanFile','Foto oder Screenshot',esc((SAMPLE_IMG.mediaTypes||[]).join(',')||'image/*'),false)}<button type="button" class="btn primary" data-act="aiPlan">Plan erkennen</button><p id="aiPlanOut" class="note" aria-live="polite"></p>`:'<p class="muted small">Das Einlesen per Foto ist in dieser Ansicht nicht verfügbar. Du kannst den Plan im Editor abtippen.</p>'}
+  ${SAMPLE&&SAMPLE_IMG?`${filePick('aiPlanFile','aiPlanFile','Foto oder Screenshot','image/*',false)}<button type="button" class="btn primary" data-act="aiPlan">Plan erkennen</button><p id="aiPlanOut" class="note" aria-live="polite"></p>`:'<p class="muted small">Das Einlesen per Foto ist in dieser Ansicht nicht verfügbar. Du kannst den Plan im Editor abtippen.</p>'}
   <p class="note">Hier findest du die Originale: ${FIND_SRC.map(link).join(' · ')}</p></div>`,null,null);
 }
 async function aiPlanFromImage(btn){
-  const f=$('#aiPlanFile')?.files?.[0],out=$('#aiPlanOut');
+  const f=pickedFiles('aiPlanFile')[0],out=$('#aiPlanOut');
   if(!f){toast('Wähle zuerst ein Bild');return;}
   btn.disabled=true;out.textContent='Liest den Plan … das kann bis zu einer Minute dauern.';
   try{
@@ -1062,11 +1159,11 @@ function coachTools(){
   });
   tools.push({
     name:'searchTips',
-    description:'Durchsucht die Zeltbuch-Tipps-Artikel (Anbautechniken, Gießen, Töpfe, Substrat, Licht, Dünger, Schädlinge, Keimung, Stecklinge, Ernte) nach einem Stichwort und liefert passende Auszüge.',
+    description:'Durchsucht die Zeltbuch-Wissensartikel (Samen, Keimung, Stecklinge, Substrat, Licht, Klima, Gießen, Dünger, Mängel, Schädlinge, Training, Crop Steering, Ernte, Trocknung, Curing, Sortenporträts) nach einem Stichwort und liefert passende Auszüge.',
     inputSchema:{type:'object',properties:{query:{type:'string'}},required:['query']},
     execute:({query})=>{
       const q=String(query||'').toLowerCase();
-      const hits=(typeof TIPS!=='undefined'?TIPS:[]).filter(t=>t.title.toLowerCase().includes(q)||(t.tags||[]).some(x=>x.includes(q))||t.body.toLowerCase().includes(q)).slice(0,3);
+      const hits=coachTips().filter(t=>t.title.toLowerCase().includes(q)||t.tags.some(x=>x.includes(q))||t.body.toLowerCase().includes(q)).slice(0,3);
       return hits.length?hits.map(t=>`${t.title}: ${t.body.slice(0,500)}`).join('\n---\n'):'Keine passenden Tipps gefunden.';
     }
   });
@@ -1074,7 +1171,7 @@ function coachTools(){
 }
 async function askCoach(q,form){
   const run=activeRun();const C=U.coach;if(!run||!SAMPLE||C.busy)return;
-  const file=$('input[type=file]',form)?.files?.[0];const useLast=form.elements.namedItem('attachLast')?.checked;
+  const file=pickedFiles('coachImgFile')[0];const useLast=form.elements.namedItem('attachLast')?.checked;
   let images=null,note='';
   try{if(file&&SAMPLE_IMG){images=[await compress(file,1600)];note=' (Foto angehängt)';}else if(useLast&&SAMPLE_IMG){const lp=lastPhoto(run);if(lp){const b=await loadMedia(lp.id);if(b)images=[b];note=` (Foto vom ${fmtShort(lp.date)} angehängt)`;}}}catch(e){}
   if(C.turns.length>12)C.turns=C.turns.slice(-12);
@@ -1093,7 +1190,7 @@ async function askCoach(q,form){
     renderCoachLog(null,code==='cancelled'?'':(COACH_ERR[code]||'Antwort fehlgeschlagen – versuch es noch einmal.'));
     if(['not_granted','sampling_disabled','not_declared','capability_disabled','capability_removed'].includes(code))SAMPLE=null;
   }
-  if(form.isConnected){const fi=$('input[type=file]',form);if(fi)fi.value='';}
+  PICKED.coachImgFile=[];renderPicked('coachImgFile');
 }
 const COACH_CHIPS=['Warum werden untere Blätter gelb?','Nährstoffmangel erkennen','Wann ist Erntezeit?','EC und pH richtig einstellen','Schädlinge erkennen und behandeln'];
 function viewCoach(){
@@ -1104,43 +1201,473 @@ function viewCoach(){
   <div class="coach-log" id="coachLog"></div>
   <form id="coachForm">
   ${fld('Deine Frage',`<textarea name="q" autofocus placeholder="z. B. Warum werden die unteren Blätter gelb?"></textarea>`)}
-  ${SAMPLE_IMG?filePick('coachImgFile','img','Foto (optional)',esc((SAMPLE_IMG.mediaTypes||[]).join(',')||'image/*'),false)+(lp?`<label class="check"><input type="checkbox" name="attachLast"> Neuestes Foto dieses Runs anhängen (${fmtShort(lp.date)})</label>`:''):''}
+  ${SAMPLE_IMG?filePick('coachImgFile','img','Foto (optional)','image/*',false)+(lp?`<label class="check"><input type="checkbox" name="attachLast"> Neuestes Foto dieses Runs anhängen (${fmtShort(lp.date)})</label>`:''):''}
   <div class="row"><button class="btn primary" type="submit">Fragen</button><button type="button" class="btn small ghost" data-act="coachReset">Neues Gespräch</button></div>
   </form>
   <div class="row" style="margin-top:10px;flex-wrap:wrap">${COACH_CHIPS.map(c=>`<button type="button" class="btn small ghost" data-act="coachChip" data-q="${esc(c)}">${esc(c)}</button>`).join('')}</div>`;
 }
 
-/* ----- Tipps ----- */
-const TIPS=[
-  {id:'giessen',cat:'Bewässerung',title:'Richtig gießen: Menge, Rhythmus, Dryback',tags:['gießen','wasser','dryback','bewässerung'],body:'Gieße nach Gewicht oder Dryback, nicht nach starrem Zeitplan: Wiege den Topf (oder schätze am Gewicht), lass ihn zwischen den Gaben spürbar leichter werden – in Veg 15–20 % Gewichtsverlust, in später Blüte auch 25–35 %, das fördert Wurzelwachstum und beugt Fäulnis vor. Gieße in Runoff, also bis 10–20 % Wasser unten aus dem Topf laufen, damit sich keine Salze aufkonzentrieren. Miess Runoff-EC gelegentlich gegen die Input-EC, um Über- oder Unterdüngung zu erkennen. Zimmerwarmes Wasser (18–24 °C) schont die Wurzeln. Bei Töpfen unter 15 L reicht meist 1–2× täglich in der Hauptblüte, größere Container brauchen seltener, dafür mehr Volumen pro Gabe. Automatisierte Tropfsysteme (wie Wilma/AutoPot) laufen am stabilsten mit mehreren kurzen Schüben statt einer langen Gabe – das verteilt Wasser gleichmäßiger im Wurzelraum und vermeidet Kanalbildung im Substrat.'},
-  {id:'toepfe',cat:'Ausstattung',title:'Topfgröße und Fütterungssystem wählen',tags:['töpfe','container','fabric pot','wilma','autopot'],body:'Die Topfgröße bestimmt, wie oft du gießen musst und wie groß die Pflanze werden darf: als Faustregel etwa 10–15 L pro finaler Pflanzengröße von 60–90 cm, 20–25 L für größere Pflanzen. Stoff-/Airpots (Fabric Pots) belüften die Wurzeln seitlich und beugen Wurzelverfilzung vor, trocknen aber schneller aus als Plastiktöpfe – ideal in Kombination mit einem Tropfsystem. Bewässerungssysteme wie Wilma oder AutoPot arbeiten mit einem Tank und Schlauch/Ventil pro Topf; wichtig ist ein sauber entlüftetes System und gleich lange Schläuche zu jedem Topf, damit alle Pflanzen die gleiche Menge bekommen. Stelle Tropfer so, dass das Wasser gleichmäßig über die Topfoberfläche verteilt wird, nicht nur an einer Stelle – das verhindert Kanalbildung und trockene Ecken.'},
-  {id:'substrat',cat:'Substrat',title:'Substratwahl: Erde, Kokos, Hydro',tags:['substrat','erde','kokos','hydro','medium'],body:'Erde puffert Nährstoff- und pH-Schwankungen am meisten und verzeiht Anfängerfehler, wächst dafür etwas langsamer. Kokos ist nahezu inert, braucht aber ein komplettes Düngeprogramm von Anfang an und tägliches Gießen mit Runoff, dafür sind Wachstum und Kontrolle über die Zufuhr schneller und präziser. Reine Hydro-Systeme (DWC, etc.) reagieren am schnellsten auf Fehler bei Temperatur, EC oder Sauerstoffversorgung, bieten im Gegenzug das schnellste Wachstum. Für ein Einsteiger-Setup mit Tropfsystem ist eine Coco/Perlite-Mischung (z. B. 70/30) ein guter Mittelweg: gute Drainage, gute Wasserhaltung, gutmütig gegenüber leichten Fehlern. Wichtig bei Kokos: vor der ersten Nutzung mit Cal-Mag puffern, da Kokosfasern Kalzium und Magnesium binden können.'},
-  {id:'licht',cat:'Licht',title:'Lichtstärke, Abstand und Photoperiode',tags:['licht','led','ppfd','photoperiode'],body:'Die Lichtmenge (PPFD, gemessen in µmol/m²/s) sollte mit der Pflanze mitwachsen: Sämling/Steckling 200–400, Veg 400–600, Blüte 700–1000, in Vollblüte mit CO₂-Anreicherung auch darüber. Zu viel Licht zu früh verursacht Lichtstress (helle, eingerollte Blattspitzen), zu wenig verlängert die Internodien und mindert den Ertrag. Hänge das Licht in dem Abstand auf, den der Hersteller für die jeweilige Leistungsstufe angibt, und taste dich mit der Dimmstufe langsam an die Zielwerte heran. Für Photoperioden-Sorten gilt: 18/6 in Veg, striktes 12/12 in Blüte – schon kurze Lichteinbrüche in der Dunkelphase können Stress oder Zwittrigkeit auslösen, deshalb Zelt lichtdicht halten. Die letzte(n) Wochen vor der Ernte reduzieren manche Grower die Lichtstärke leicht, um Stress zu senken – zwingend nötig ist das aber nicht.'},
-  {id:'duengung',cat:'Düngung',title:'Düngen nach EC/pH statt nach Schema F',tags:['dünger','ec','ph','nährstoffe','feed'],body:'Ein Düngeplan ist ein Startpunkt, kein Gesetz: Miss immer die tatsächliche EC/pH deiner fertigen Nährlösung, statt blind der Tabelle zu vertrauen, denn Wasserqualität, Topfgröße und Sortenreaktion unterscheiden sich. Für Erde/Kokos ist ein pH von 5,8–6,2 üblich, in reiner Hydro eher 5,5–5,8. Steigere die EC in Trittstufen und beobachte die Blattspitzen: leichtes Einrollen nach unten und dunkelgrüne Farbe deuten auf Überdüngung, blasse untere Blätter auf Mangel. Miss zusätzlich die Runoff-EC – liegt sie deutlich über der Input-EC, akkumulieren Salze im Substrat und ein Spülgang mit reinem (leicht gedüngtem) Wasser schafft Abhilfe. In der letzten Woche vor der Ernte auf reines, mild gedüngtes Wasser umzustellen ("Flush") ist unter Growern umstritten – wichtiger für Geschmack ist meist eine saubere, gut belüftete Trocknung.'},
-  {id:'schaedlinge',cat:'Pflanzenschutz',title:'Schädlinge und Krankheiten früh erkennen',tags:['schädlinge','spinnmilben','thrips','mehltau','pflanzenschutz'],body:'Kontrolliere regelmäßig die Blattunterseiten mit einer Lupe – die meisten Schädlinge (Spinnmilben, Thripse, Blattläuse) verstecken sich dort und zeigen sich zuerst durch feine helle Sprenkel auf den Blättern oder feine Gespinste. Echter Mehltau zeigt sich als weißer, mehliger Belag auf der Blattoberseite und breitet sich bei hoher Luftfeuchte und schlechter Luftzirkulation schnell aus – ein Umluftventilator und moderate rLF helfen vorbeugend. Bei Befall zuerst betroffene Blätter/Pflanzenteile entfernen und isolieren, dann mit für den Innenanbau geeigneten Mitteln (z. B. Kaliseife, Neemöl in Veg, niemals in später Blüte wegen Geruch/Rückständen) behandeln. In der Blüte sind biologische Nützlinge (Raubmilben) oft die sicherste Option, da chemische Mittel zu Rückständen in der Ernte führen können. Eine saubere Anbauumgebung (kein offenes Erdsäckchen, Werkzeuge desinfizieren, keine fremden Pflanzen ins Zelt) ist die wirksamste Vorbeugung.'},
-  {id:'keimung',cat:'Vermehrung',title:'Samen zum Keimen bringen',tags:['keimung','samen','germination'],body:'Die zuverlässigste Methode ist die Papiertuch-Methode: Samen zwischen zwei feuchte (nicht nasse) Küchenpapiere legen, in eine geschlossene Box bei 22–25 °C und dunkel lagern, täglich auf Feuchtigkeit prüfen. Nach 1–5 Tagen erscheint eine kleine weiße Wurzel (Taproot) – dann vorsichtig mit sauberen Fingern oder Pinzette (nie an der Wurzel selbst anfassen) in feuchtes, lockeres Anzuchtsubstrat setzen, Wurzel nach unten, etwa 1 cm tief. Alternativ direkt ins leicht feuchte Substrat säen, das ist stressärmer für die junge Wurzel, dauert aber optisch länger bis man den Fortschritt sieht. Die ersten Tage genügt sehr schwaches Licht und hohe Luftfeuchte (Anzuchthaube); erst wenn die Keimblätter sich öffnen, langsam an normales Vegwachstumslicht gewöhnen.'},
-  {id:'stecklinge',cat:'Vermehrung',title:'Stecklinge schneiden und bewurzeln',tags:['stecklinge','klone','clones'],body:'Wähle einen gesunden, nicht blühenden Zweig mit mehreren Nodien, schneide im 45°-Winkel unter einem Nodium mit scharfer, desinfizierter Klinge. Untere Blätter entfernen, große obere Blätter zur Hälfte einkürzen, um Verdunstung zu reduzieren. Schnittstelle in Bewurzelungsgel/-pulver tauchen und in ein feuchtes, steriles Medium (Steinwolle, Bewurzelungswürfel oder Perlite/Vermiculite-Mix) stecken. Unter einer Klarsichthaube bei hoher Luftfeuchte (80–90 %) und mildem Licht (bzw. Anzuchtröhren) halten, Haube täglich kurz lüften, um Schimmel vorzubeugen. Nach 7–14 Tagen zeigen sich neue weiße Wurzeln; erst dann langsam an normale Luftfeuchte und Lichtstärke gewöhnen. Eine leichte Unterlage mit Wärme (20–25 °C Substrattemperatur) beschleunigt die Bewurzelung spürbar.'},
-  {id:'training',cat:'Technik',title:'LST, Topping und Entlaubung',tags:['training','lst','topping','entlaubung','defoliation'],body:'Low Stress Training (LST) bindet Triebe seitlich herunter, statt sie zu schneiden – das öffnet die Pflanze fürs Licht und fördert mehrere gleichmäßige Kolen, ohne Wachstumspause. Topping (Kappen der Haupttriebspitze über einem Nodium) fördert zwei neue Haupttriebe und eine buschigere Pflanze, kostet aber einige Tage Erholung; am besten früh in der Vegetationsphase durchführen, spätestens 1–2 Wochen vor Blühbeginn. Entlaubung (Defoliation) entfernt große, lichtblockierende Blätter, um Licht und Luft zu unteren Blütenständen zu bringen – sanft in der ersten Blütewoche und noch einmal moderat um Woche 3 der Blüte, danach zurückhaltend, da die Pflanze die Blätter für die Fruchtbildung braucht. Nach jedem Eingriff mindestens 24–48 Stunden ohne weiteren Stress (kein Düngewechsel, kein Umtopfen) geben, damit sich die Pflanze erholen kann.'},
-  {id:'ernte-trocknen',cat:'Ernte',title:'Erntezeitpunkt, Trocknung und Curing',tags:['ernte','trichome','trocknen','curing'],body:'Der Erntezeitpunkt richtet sich am zuverlässigsten nach den Trichomen unter einer Lupe/Mikroskop: milchig-trübe Trichome bedeuten volle THC-Reife, ein steigender Amber-Anteil (10–30 %, je nach gewünschter Wirkung) bringt einen etwas entspannteren, weniger "kopflastigen" Effekt. Nach der Ernte langsam trocknen: 18–20 °C, 55–62 % rLF, Dunkelheit und sanfte, indirekte Luftzirkulation über 7–14 Tage, bis kleine Stiele beim Biegen brechen statt sich nur zu biegen. Zu schnelles Trocknen (zu warm, zu trocken) verschlechtert Geruch und Wirkung. Danach in luftdichten Gläsern bei 58–62 % Luftfeuchte curen: die ersten 1–2 Wochen täglich kurz "burpen" (Deckel öffnen), danach seltener; nach 3–4 Wochen ist ein deutlicher Qualitätssprung bei Geruch, Geschmack und Rauchhärte spürbar, viele Sorten profitieren noch über Monate von weiterer Reifung.'},
-  {id:'crop-steering',cat:'Technik',title:'Grundlagen Crop Steering',tags:['crop steering','dryback','shots','generative','vegetative'],body:'Crop Steering nutzt Gieß-Timing und -Menge gezielt, um die Pflanze zwischen vegetativem (mehr Wachstum, mehr Blattmasse) und generativem Zustand (mehr Blütenansatz, kompaktere Struktur) zu lenken. Ein größerer Dryback (Austrocknung zwischen den Gaben, gemessen als Gewichtsverlust in %) vor der ersten Gabe des Tages wirkt generativer, häufige kleine Gaben mit wenig Dryback wirken vegetativer. In der frühen Blüte oft moderater Dryback (15–20 %) für Struktur, in der Mitte der Blüte etwas mehr Volumen für Fruchtmasse, in der Spätblüte wieder leicht reduzierend. Wichtig ist Konsistenz: Miss Dryback über Topfgewicht (Waage) oder Substratfeuchte-Sensor, dokumentiere die Werte, und ändere pro Phase nur eine Stellschraube gleichzeitig (entweder Menge oder Timing), um Ursache und Wirkung sauber zuordnen zu können.'}
-];
-function tipCard(t){return `<button class="li" data-act="tip" data-id="${t.id}"><span class="grow"><b>${esc(t.title)}</b><br><span class="small muted">${esc(t.cat)}</span></span><span aria-hidden="true" class="muted">›</span></button>`;}
-function viewTips(){
-  const cats=[...new Set(TIPS.map(t=>t.cat))];
-  return `<p class="note">Kurze, praktische Anleitungen zu den wichtigsten Themen im Homegrow. Der Grow-Coach kann bei Fragen automatisch in diesen Artikeln nachschlagen.</p>
-  ${cats.map(c=>`<section><div class="sec-h"><span class="sec">${esc(c)}</span></div><div class="card"><div class="list">${TIPS.filter(t=>t.cat===c).map(tipCard).join('')}</div></div></section>`).join('')}
-  <section><div class="sec-h"><span class="sec">Samenbank-Referenz</span></div>
-  <div class="card stack" style="gap:10px">
-  <p class="small muted">Kuratierte Wissensdatenbank bekannter Breeder und Sorten mit Typ, Genetik und ungefährer Blütedauer – als Nachschlagehilfe, keine vollständige Datenbank. Übernommene Sorten landen in deiner Genetik-Bibliothek.</p>
-  <input id="seedLibQ" placeholder="Sorte oder Breeder suchen … z. B. OG Kush, Haze, Auto" autocomplete="off">
-  <div id="seedLibOut"></div>
-  </div></section>`;
-}
-function tipSheet(id){
-  const t=TIPS.find(x=>x.id===id);if(!t)return;
-  openSheet(t.title,`<p class="small muted">${esc(t.cat)}</p><p style="white-space:pre-wrap;line-height:1.5">${esc(t.body)}</p>`,null,null);
-}
+/* ----- Wissen / Blog ----- */
+/* Fotos: Unsplash-Lizenz (kostenlos, auch kommerziell, keine Namensnennung nötig – wir nennen die Fotografen trotzdem).
+   u = Bildpfad auf images.unsplash.com, id = Seite auf unsplash.com, by = Fotograf/in */
+const IMG={
+  keimung:{u:'photo-1542601906990-b4d3fb778b09',id:'x8ZStukS2PM',by:'Noah Buscher',alt:'Hände halten einen Keimling in Erde'},
+  stecklinge:{u:'photo-1762542531577-e2d6acc8ca51',id:'iRqFBhM7fOU',by:'Cameron Arksey',alt:'Stecklinge bewurzeln in Glasröhrchen'},
+  mutter:{u:'photo-1546030001-775bbae16502',id:'plxQu8R2O0s',by:'Jose Luis Sanchez Pereyra',alt:'Cannabispflanze in der Wachstumsphase'},
+  samen:{u:'photo-1594841061157-256f0363d6f9',id:'s2MsMl4KX5c',by:'Canvast Supply Co.',alt:'Cannabissamen in einer Schale'},
+  indica:{u:'photo-1787698411080-9f5da430d919',id:'5C5e7ksFbwM',by:'Colin Redwood',alt:'Blühende Pflanzen mit violetten und grünen Blättern'},
+  lagern:{u:'photo-1561881510-4ab76587efbe',id:'1mlaWgnMSxc',by:'Jen Theodore',alt:'Luftdichtes Glas mit Holzlöffel'},
+  sortenwahl:{u:'photo-1786021455922-08588e369087',id:'SKuvCOTiTso',by:'GB The Green Brand',alt:'Verschiedene blühende Cannabispflanzen'},
+  auto:{u:'photo-1687991560518-ae0dfee8d6b5',id:'0JWRgKBNuBE',by:'Indorgro',alt:'Junge Cannabispflanze im Indoor-Anbau'},
+  pheno:{u:'photo-1629406979664-d930f76dc124',id:'6hKcVllx3Rs',by:'Indorgro',alt:'Harzige Blüte mit Trichomen in Nahaufnahme'},
+  substrat:{u:'photo-1642952273588-ed6fa28870ac',id:'bQ9y93kdk4c',by:'Alicia Christin Gerald',alt:'Eine Handvoll Erde'},
+  toepfe:{u:'photo-1752775312083-1cefe2f93358',id:'dnKOzWK2Ue0',by:'Sercan Naya',alt:'Junge Pflanze mit Tropfbewässerung'},
+  licht:{u:'photo-1773609563802-31bb254fee5c',id:'j_AS3_rCA6Q',by:'Colin Redwood',alt:'Cannabispflanzen unter Kunstlicht'},
+  klima:{u:'photo-1720239251940-cc1903b810bb',id:'MaBuLXrkLMs',by:'tian dayong',alt:'Wassertropfen auf einem Blatt'},
+  giessen:{u:'photo-1747339385292-d58fdff13938',id:'1VJt-0nyDhg',by:'Benjamin White',alt:'Pflanzen werden mit der Gießkanne gegossen'},
+  duengung:{u:'photo-1590682711742-132529530be6',id:'Er3RvK6xat8',by:'GreenForce Staffing',alt:'Cannabispflanze im schwarzen Topf, indoor'},
+  mangel:{u:'photo-1567638221147-dccab962beb8',id:'iYg-W1yM_Zo',by:'Sharon Co Images',alt:'Gelbes Blatt'},
+  schaedlinge:{u:'photo-1684776874488-ef5128abb217',id:'36hgZdPWpBc',by:'Vasilina Sirotina',alt:'Lupe über einer Pflanze'},
+  training:{u:'photo-1680124744737-03fb697f303d',id:'axZQeOgrZvk',by:'Margarita Shtyfura',alt:'Schere vor einer Pflanze'},
+  steering:{u:'photo-1786021455883-ab5e4f9c7d19',id:'vZsJbl-3-VI',by:'GB The Green Brand',alt:'Üppige Indoor-Pflanzen mit Ventilator'},
+  ernte:{u:'photo-1590682751946-a65099676151',id:'D4q75sRsz_M',by:'GreenForce Staffing',alt:'Erntereife Cannabisblüte'},
+  trocknen:{u:'photo-1600246444216-467a4c83c331',id:'HVP_T178iAc',by:'Ilse Orsel',alt:'Kräuter hängen zum Trocknen an einer Schnur'},
+  curing:{u:'photo-1599177750998-ccccda2f3cc0',id:'UBlArdMqd5M',by:'Jeff W',alt:'Glas mit getrockneten Blüten'},
+  /* Sortenporträts: Symbolbilder */
+  s1:{u:'photo-1498671546682-94a232c26d17',id:'qcCPIhhdgTw',by:'Matthew Brodeur',alt:'Cannabisblüte in Nahaufnahme'},
+  s2:{u:'photo-1714078506638-fbc5a0cf2e0a',id:'dO7GuHkEkLI',by:'Premium Cultivars',alt:'Cannabispflanze mit Blüten'},
+  s3:{u:'photo-1634902349007-cfc9c61dff79',id:'N9w237MCZxU',by:'spencer gray',alt:'Frostige Blüte voller Trichome'},
+  s4:{u:'photo-1518469669531-9b8c528f909d',id:'zwc6BD4_RDE',by:'Ndispensable',alt:'Getrocknete Blüte auf hellem Stoff'},
+  s5:{u:'photo-1617101814633-c8a6cfd159cc',id:'papBPuF484I',by:'CRYSTALWEED cannabis',alt:'Blüte vor schwarzem Hintergrund'},
+  s6:{u:'photo-1519181236443-b175d4c3ca1d',id:'PGc9Vid8O24',by:'Rick Proctor',alt:'Grüne Cannabispflanze in Nahaufnahme'},
+  s7:{u:'photo-1597266028999-5ee5dbb30b3c',id:'BmVUVmWNJc8',by:'Jeff W',alt:'Cannabispflanze in Nahaufnahme'},
+  s8:{u:'photo-1609443934742-3e2383f9423f',id:'WhFDyPpBG2E',by:'Diyahna Lewis',alt:'Blüte mit braunen Stempeln'},
+  s9:{u:'photo-1597266029701-618ac066150a',id:'r19PtSh4m7A',by:'Jeff W',alt:'Cannabisblätter'},
+  s10:{u:'photo-1546030001-8bd8ac78d21c',id:'H-OxL9GIXvk',by:'Jose Luis Sanchez Pereyra',alt:'Pflanze mit rot-grünen Blättern'}
+};
+const imgURL=(k,w)=>IMG[k]?`https://images.unsplash.com/${IMG[k].u}?w=${w}&q=70&auto=format&fit=crop`:'';
+const imgTag=(k,w,cls='')=>IMG[k]?`<img src="${imgURL(k,w)}" srcset="${imgURL(k,w)} 1x, ${imgURL(k,w*2)} 2x" alt="${esc(IMG[k].alt)}" loading="lazy" decoding="async"${cls?` class="${cls}"`:''} onerror="this.remove()">`:'';
+const imgCredit=k=>IMG[k]?`<a class="credit" href="https://unsplash.com/photos/${IMG[k].id}?utm_source=zeltbuch&utm_medium=referral" target="_blank" rel="noopener">Foto: ${esc(IMG[k].by)} / Unsplash</a>`:'';
 
+const BLOG_CATS=['Samen & Genetik','Vermehrung','Grundlagen','Licht & Klima','Bewässerung & Düngung','Pflanzenpflege','Ernte & Curing','Sortenporträts'];
+/* Textformat: Absätze mit Leerzeile, "## " = Zwischenüberschrift, "- " = Aufzählung, [[id|Text]] = interner Link */
+const BLOG=[
+ {id:'samen-typen',cat:'Samen & Genetik',img:'samen',title:'Samen-Typen: regulär, feminisiert, Autoflower',lead:'Welcher Samen passt zu dir? Die drei Typen unterscheiden sich in Geschlecht, Blütesteuerung und Aufwand.',tags:['samen','feminisiert','regulär','autoflower','seeds'],related:['sortenwahl','autoflower','keimung','samen-lagern'],
+  body:`## Reguläre Samen
+Reguläre Samen ergeben etwa zur Hälfte männliche und weibliche Pflanzen. Für Blüten brauchst du nur die weiblichen – die männlichen musst du erkennen und früh entfernen, bevor sie bestäuben. Dafür sind reguläre Samen genetisch meist stabiler und die erste Wahl, wenn du selbst kreuzen oder eine [[mutterpflanze|Mutterpflanze]] aus einem kräftigen Pheno aufbauen willst.
+
+## Feminisierte Samen
+Feminisierte Samen ergeben fast ausschließlich weibliche Pflanzen. Das spart Platz und Zeit und ist für die meisten Homegrower der Standard. Unter starkem Stress (Lichtlecks, Hitze, grobe Eingriffe in später Blüte) können einzelne Pflanzen zwittrig werden – kontrolliere deshalb in der Blüte regelmäßig auf „Bananen“ (männliche Staubbeutel).
+
+## Autoflower
+Autoflower-Samen enthalten Ruderalis-Genetik und blühen unabhängig von der Lichtdauer nach wenigen Wochen von selbst. Vom Keimen bis zur Ernte vergehen oft nur 9–11 Wochen. Sie bleiben meist kompakter, verzeihen aber Fehler in der Wachstumsphase weniger, weil keine Zeit zum Aufholen bleibt. Mehr dazu im Artikel [[autoflower|Autoflower richtig growen]].
+
+## Photoperiodisch
+Photoperiodische Sorten (regulär oder feminisiert) wachsen, solange sie lange Tage bekommen, und blühen erst bei 12/12. So bestimmst du selbst, wie groß die Pflanze wird – ideal, wenn du [[training|trainieren]] und den Platz im Zelt voll ausnutzen willst.
+
+## Kurz-Entscheidung
+- Wenig Zeit, kleiner Platz, einfacher Einstieg: Autoflower.
+- Volle Kontrolle über Größe und Ertrag: feminisiert, photoperiodisch.
+- Eigene Genetik, Pheno-Suche, Kreuzen: regulär. Siehe [[phaenos|Phänotypen]].`},
+ {id:'indica-sativa',cat:'Samen & Genetik',img:'indica',title:'Indica, Sativa, Hybrid – was die Begriffe wirklich sagen',lead:'Die Etiketten beschreiben vor allem Wuchs und Blütedauer. Über Aroma und Wirkung sagen sie weniger, als oft behauptet wird.',tags:['indica','sativa','hybrid','genetik'],related:['sortenwahl','phaenos','samen-typen','licht'],
+  body:`## Ursprung der Begriffe
+Ursprünglich beschrieben „Indica“ und „Sativa“ Landrassen aus unterschiedlichen Regionen: kompakte, breitblättrige Pflanzen aus Bergregionen wie dem Hindukusch und hohe, schmalblättrige Pflanzen aus warmen, äquatornahen Gebieten. Fast alle heutigen Sorten sind Hybriden aus vielen Generationen Kreuzung.
+
+## Was du im Zelt merkst
+- Indica-dominant: kompakter Wuchs, kurze Internodien, dichte Blüten, meist 7–9 Wochen Blüte. Dichte Blüten brauchen gutes [[klima|Klima]] – sonst droht Schimmel.
+- Sativa-dominant: starker Stretch (die Pflanze kann sich nach dem Umstellen verdoppeln bis verdreifachen), lockere Blüten, oft 9–11 Wochen Blüte. Plane Höhe und [[licht|Lichtabstand]] mit ein und [[training|trainiere]] früh.
+- Hybrid: irgendwo dazwischen – schau auf die Angaben des Breeders zu Höhe, Stretch und Blütedauer.
+
+## Aroma und Wirkung
+Aroma und Charakter hängen vor allem von der Zusammensetzung der Cannabinoide und Terpene ab – und die variiert selbst innerhalb einer Sorte von Pflanze zu Pflanze (siehe [[phaenos|Phänotypen]]). Das Etikett „Indica“ oder „Sativa“ ist dafür nur ein grober Hinweis.
+
+## Im Zeltbuch nutzen
+Trag bei deinen Sorten in der Genetik die Blütedauer ein. Das Zeltbuch übernimmt sie beim Anlegen einer Pflanze in den Run und rechnet daraus das Erntefenster.`},
+ {id:'sortenwahl',cat:'Samen & Genetik',img:'sortenwahl',title:'Die richtige Sorte für Zelt und Erfahrung',lead:'Höhe, Blütedauer, Geruch und Anfälligkeit – worauf du bei der Sortenwahl achten solltest.',tags:['sorte','sortenwahl','strain','einsteiger'],related:['samen-typen','indica-sativa','autoflower','klima'],
+  body:`## Platz und Höhe
+Miss die nutzbare Höhe deines Zelts: Zelthöhe minus Lampe, Aufhängung und Topf. Bleiben weniger als etwa 100 cm, sind kompakte Indica-Hybriden oder [[autoflower|Autoflower]] die sichere Wahl. Stark sativalastige Sorten strecken sich nach dem Umstellen deutlich – das lässt sich mit [[training|LST und Topping]] zähmen, verlangt aber Aufmerksamkeit.
+
+## Blütedauer
+Die Blütedauer bestimmt, wie viele Runs pro Jahr möglich sind und wie lange Strom läuft. 8 Wochen sind ein guter Richtwert für Einsteiger, Haze-Sorten brauchen oft 10 Wochen und mehr.
+
+## Robustheit
+Für die ersten Runs lohnen sich Sorten mit dem Ruf, robust und schimmelresistent zu sein. Sehr dichte, großblütige Sorten sind anfälliger für Schimmel, wenn die [[klima|Luftfeuchte]] in der Blüte zu hoch ist.
+
+## Geruch
+Manche Sorten riechen in der Blüte sehr stark. Ein passend dimensionierter Aktivkohlefilter ist Pflicht, egal welche Sorte.
+
+## Vorgehen
+- Ein bis zwei Sorten pro Run, nicht fünf verschiedene – sonst passen Dünger, Stretch und Erntezeit nie für alle.
+- Notiere die Eckdaten in der Genetik-Bibliothek, dann vergleicht das Zeltbuch deine Sorten über mehrere Runs.
+- Stöbere in den Sortenporträts, zum Beispiel [[sorte-northern-lights|Northern Lights]], [[sorte-critical|Critical]] oder [[sorte-white-widow|White Widow]].`},
+ {id:'autoflower',cat:'Samen & Genetik',img:'auto',title:'Autoflower richtig growen',lead:'Autoflowers blühen nach Kalender, nicht nach Licht. Wer die Unterschiede kennt, erntet schnell und unkompliziert.',tags:['autoflower','auto','ruderalis'],related:['samen-typen','keimung','training','licht'],
+  body:`## Der wichtigste Unterschied
+Autoflowers starten die Blüte nach etwa 3–5 Wochen von selbst. Alles, was die Pflanze in dieser Zeit verliert – durch Umtopfen, Überwässern oder zu starkes Düngen – holt sie nicht mehr auf.
+
+## Praxis
+- Direkt in den Endtopf säen (etwa 11–20 L), Umtopfen kostet Zeit. Wie das Keimen klappt, steht unter [[keimung|Samen keimen]].
+- Licht: durchgehend 18/6 oder 20/4 – kein Umstellen auf 12/12 nötig. Zielwerte im Artikel [[licht|Licht & Photoperiode]].
+- Düngen: etwas schwächer als photoperiodische Pflanzen, gerade in den ersten Wochen.
+- Training: sanftes [[training|LST]] ja, Topping nur sehr früh oder gar nicht.
+
+## Im Zeltbuch
+Leg den Run mit Startphase „Keimung“ an und trag die Blütedauer ab Keimung ein. Die Phase „Blüte“ setzt du, sobald sich die ersten Stempel zeigen.`},
+ {id:'phaenos',cat:'Samen & Genetik',img:'pheno',title:'Phänotypen und Pheno-Hunting',lead:'Aus einer Samenpackung wachsen nie ganz gleiche Pflanzen. Wie du die beste findest und behältst.',tags:['pheno','phänotyp','selektion','keeper'],related:['mutterpflanze','stecklinge','samen-typen','ernte'],
+  body:`## Was ist ein Pheno?
+Jeder Samen trägt eine eigene Kombination der Gene seiner Eltern. Pflanzen derselben Sorte können sich deshalb in Wuchs, Aroma, Ertrag und Blütedauer deutlich unterscheiden – das sind die Phänotypen.
+
+## Pheno-Hunting in drei Schritten
+- Mehrere Samen einer Sorte keimen und jeder Pflanze eine eigene Bezeichnung geben (im Zeltbuch zum Beispiel P1, P2, P3).
+- Vor dem Umstellen auf Blüte von jeder Pflanze einen [[stecklinge|Steckling]] nehmen und beschriften.
+- Nach Ernte, [[trocknen|Trocknung]] und [[curing|Curing]] bewerten. Den besten „Keeper“ als [[mutterpflanze|Mutterpflanze]] behalten, die anderen Stecklinge entsorgen.
+
+## Worauf achten
+Wuchs und Stretch, Schimmelresistenz, Harzproduktion, Aroma nach dem Curing, Ertrag und wie leicht sich die Pflanze pflegen lässt. Nutze dafür die Bewertung je Pflanze unter „Ernte & Curing“ – das Zeltbuch rechnet die Sterne pro Sorte über alle Runs zusammen.`},
+ {id:'samen-lagern',cat:'Samen & Genetik',img:'lagern',title:'Samen richtig lagern',lead:'Kühl, dunkel, trocken und luftdicht – so bleiben Samen jahrelang keimfähig.',tags:['samen','lagern','keimfähigkeit','aufbewahrung'],related:['keimung','samen-typen','sortenwahl'],
+  body:`## Die vier Feinde
+Wärme, Licht, Feuchtigkeit und Sauerstoff lassen Samen altern. Gut gelagert bleiben sie mehrere Jahre keimfähig, schlecht gelagert oft nur wenige Monate.
+
+## So lagerst du richtig
+- Luftdichter, lichtdichter Behälter, am besten mit einem kleinen Beutel Silicagel gegen Feuchtigkeit.
+- Kühl und gleichmäßig: Der Kühlschrank (etwa 4–8 °C) ist ideal – aber nicht in der Tür, wo die Temperatur ständig schwankt.
+- Den Behälter vor dem Öffnen auf Zimmertemperatur kommen lassen, sonst bildet sich Kondenswasser auf den Samen.
+- Beschriften: Sorte, Breeder, Kaufdatum.
+
+## Im Zeltbuch
+Trag den Samenbestand in der Genetik-Bibliothek ein. Beim Anlegen einer Pflanze aus Samen zieht das Zeltbuch automatisch einen Samen ab. Wie du die Samen dann zum Leben erweckst, steht unter [[keimung|Samen keimen]].`},
+ {id:'keimung',cat:'Vermehrung',img:'keimung',title:'Samen zum Keimen bringen',lead:'Mit der Küchenpapier-Methode keimen fast alle Samen innerhalb weniger Tage – so geht’s Schritt für Schritt.',tags:['keimung','samen','germination','sämling'],related:['samen-lagern','samen-typen','licht','giessen'],
+  body:`## Küchenpapier-Methode
+Leg die Samen zwischen zwei feuchte (nicht nasse) Küchenpapiere, in eine geschlossene Box, dunkel bei 22–25 °C. Prüfe täglich, ob das Papier noch feucht ist. Nach 1–5 Tagen erscheint eine kleine weiße Wurzel.
+
+## Einsetzen
+Fass die Keimwurzel nicht an. Setz den Samen mit einer sauberen Pinzette etwa 1 cm tief in lockeres, leicht feuchtes Anzuchtsubstrat, die Wurzel zeigt nach unten. Alternativ säst du direkt ins [[substrat|Substrat]] – das ist stressärmer, du siehst den Fortschritt aber später.
+
+## Die ersten Tage
+- Hohe Luftfeuchte (65–75 %), zum Beispiel mit einer Anzuchthaube. Mehr unter [[klima|Temperatur & Luftfeuchte]].
+- Wenig Licht: 200–400 µmol/m²/s reichen. Details unter [[licht|Licht]].
+- Sparsam gießen: Sämlinge ertrinken leichter, als sie vertrocknen. Siehe [[giessen|Richtig gießen]].
+
+## Im Zeltbuch
+Leg einen Run mit Startphase „Keimung“ an. Wechsle auf „Veg“, sobald die ersten echten Blätter da sind – ab dann zählt die App die Veg-Wochen.`},
+ {id:'stecklinge',cat:'Vermehrung',img:'stecklinge',title:'Stecklinge schneiden und bewurzeln',lead:'Stecklinge sind genetische Kopien deiner besten Pflanze. Mit sauberer Technik bewurzeln sie in ein bis zwei Wochen.',tags:['stecklinge','klone','clones','bewurzeln'],related:['mutterpflanze','phaenos','klima','training'],
+  body:`## Schneiden
+Wähle einen gesunden Trieb mit 2–3 Nodien, der noch nicht blüht. Schneide mit einer scharfen, desinfizierten Klinge schräg knapp unter einem Nodium. Entferne die unteren Blätter und kürze große Blätter um die Hälfte, damit weniger Wasser verdunstet.
+
+## Bewurzeln
+- Schnittstelle in Bewurzelungsgel oder -pulver tauchen.
+- In ein steriles Medium stecken: Steinwolle, Anzuchtwürfel oder Perlite-Mischung.
+- Unter einer Haube bei 80–90 % Luftfeuchte und mildem Licht halten, täglich kurz lüften.
+- 20–25 °C im Medium beschleunigen die Wurzelbildung deutlich.
+
+Nach 7–14 Tagen zeigen sich weiße Wurzeln. Dann Haube schrittweise öffnen und an normales [[klima|Klima]] gewöhnen.
+
+## Woher die Stecklinge kommen
+Am zuverlässigsten von einer [[mutterpflanze|Mutterpflanze]]. Stecklinge, die du vor der Blüte von Sämlingen nimmst, sind die Grundlage fürs [[phaenos|Pheno-Hunting]]. Im Zeltbuch trägst du Stecklinge bei der Sorte unter „Stecklinge genommen“ ein – auf Wunsch direkt als Pflanzen im Run.`},
+ {id:'mutterpflanze',cat:'Vermehrung',img:'mutter',title:'Eine Mutterpflanze halten',lead:'Eine gute Mutter liefert über Monate Stecklinge mit identischer Genetik.',tags:['mutterpflanze','mutter','stecklinge','keeper'],related:['stecklinge','phaenos','licht','duengung'],
+  body:`## Die richtige Pflanze
+Nimm nur einen erprobten „Keeper“: eine Pflanze, deren Ernte du schon kennst. Wie du ihn findest, steht unter [[phaenos|Pheno-Hunting]].
+
+## Pflege
+- Dauerhaft vegetativ: 18/6 oder mehr, moderates Licht reicht (etwa 300–500 µmol/m²/s).
+- Mild düngen, vor allem Stickstoff und Calcium/Magnesium – siehe [[duengung|Düngen nach EC & pH]].
+- Regelmäßig zurückschneiden, damit viele kräftige Triebe für [[stecklinge|Stecklinge]] nachwachsen.
+- Alle paar Monate umtopfen oder die Wurzeln zurückschneiden.
+
+## Erneuern
+Mit der Zeit werden Mütter holzig und liefern schwächere Triebe. Viele Grower ersetzen die Mutter nach einigen Monaten bis etwa einem Jahr durch einen eigenen bewurzelten Steckling.
+
+## Im Zeltbuch
+Hake bei der Sorte „Ich halte eine Mutterpflanze“ an und trag das Datum ein. Dann erscheint dort der Knopf „Stecklinge genommen“.`},
+ {id:'substrat',cat:'Grundlagen',img:'substrat',title:'Substratwahl: Erde, Kokos, Hydro',lead:'Das Medium bestimmt, wie oft du gießt, wie du düngst und wie verzeihend dein Grow ist.',tags:['substrat','erde','kokos','hydro','medium'],related:['toepfe','giessen','duengung','crop-steering'],
+  body:`## Erde
+Erde puffert Nährstoff- und pH-Schwankungen am besten und verzeiht Anfängerfehler. Vorgedüngte Erde braucht in den ersten Wochen kaum Dünger. Dafür wächst die Pflanze etwas langsamer.
+
+## Kokos
+Kokos ist fast frei von Nährstoffen. Du brauchst ein komplettes Düngeprogramm von Anfang an und gießt häufig mit etwas Ablaufwasser (Runoff). Dafür wachsen die Pflanzen schneller und du steuerst die Versorgung genauer. Wichtig: Kokos vor dem ersten Einsatz mit Cal-Mag puffern, weil die Fasern Calcium und Magnesium binden.
+
+## Hydro
+Reine Hydro-Systeme wie DWC wachsen am schnellsten, reagieren aber auch am schnellsten auf Fehler bei Temperatur, EC oder Sauerstoff.
+
+## Empfehlung
+Für ein Tropfsystem ist eine Kokos-Perlite-Mischung (etwa 70/30) ein guter Mittelweg: gute Drainage, gute Wasserhaltung. Passende [[toepfe|Töpfe und Bewässerung]], den richtigen [[giessen|Gießrhythmus]] und das [[duengung|Düngen nach EC & pH]] findest du in den verlinkten Artikeln.`},
+ {id:'toepfe',cat:'Grundlagen',img:'toepfe',title:'Topfgröße und Bewässerungssystem',lead:'Wie groß der Topf sein muss und wie Tropfsysteme gleichmäßig versorgen.',tags:['töpfe','container','fabric pot','wilma','autopot','tropfsystem'],related:['substrat','giessen','crop-steering'],
+  body:`## Topfgröße
+Faustregel: etwa 10–15 L für Pflanzen, die 60–90 cm groß werden, 20–25 L für größere. Kleinere Töpfe trocknen schneller aus und erlauben mehr Kontrolle beim [[crop-steering|Crop Steering]], brauchen aber häufiger Wasser.
+
+## Stoff- oder Plastiktopf
+Stofftöpfe belüften die Wurzeln seitlich und verhindern, dass sich Wurzeln im Kreis drehen. Sie trocknen schneller als Plastiktöpfe – ideal in Kombination mit einem Tropfsystem.
+
+## Tropfsysteme (z. B. Wilma, AutoPot)
+- System vor dem Start sauber entlüften.
+- Schläuche zu allen Töpfen gleich lang schneiden, damit jede Pflanze dieselbe Menge bekommt.
+- Tropfer so setzen, dass das Wasser über die ganze Oberfläche verteilt wird – sonst entstehen trockene Ecken und Kanäle im [[substrat|Substrat]].
+- Mehrere kurze Schübe verteilen das Wasser besser als eine lange Gabe. Wie viel, steht unter [[giessen|Richtig gießen]].
+
+## Im Zeltbuch
+Trag Topf- und Tankgröße im Setup ein. Der Feed-Rechner übernimmt dann die Tankgröße, das Crop Steering rechnet die Shot-Menge pro Topf.`},
+ {id:'licht',cat:'Licht & Klima',img:'licht',title:'Lichtstärke, Abstand und Photoperiode',lead:'Die richtige Lichtmenge wächst mit der Pflanze mit. Diese Zielwerte helfen beim Einstellen.',tags:['licht','led','ppfd','photoperiode','dli'],related:['klima','autoflower','indica-sativa','training'],
+  body:`## Zielwerte (PPFD in µmol/m²/s)
+- Sämling und Steckling: 200–400
+- Wachstumsphase: 400–600
+- Blüte: 700–1000, mit zusätzlichem CO₂ auch mehr
+
+Zu viel Licht zu früh zeigt sich an hellen, nach oben eingerollten Blattspitzen. Zu wenig Licht streckt die Abstände zwischen den Nodien und kostet Ertrag.
+
+## Abstand
+Häng die Lampe in dem Abstand auf, den der Hersteller für die jeweilige Dimmstufe angibt, und taste dich langsam an die Zielwerte heran. Achtung bei Sorten mit viel Stretch (siehe [[indica-sativa|Indica, Sativa, Hybrid]]): Nach dem Umstellen wachsen sie oft schnell in die Lampe.
+
+## Photoperiode
+Photoperiodische Sorten wachsen bei 18/6 und blühen bei striktem 12/12. Schon kurze Lichteinbrüche in der Dunkelphase können Stress oder Zwitter auslösen – halte das Zelt lichtdicht. [[autoflower|Autoflowers]] bleiben durchgehend bei 18/6 oder 20/4.
+
+## Licht und Klima gehören zusammen
+Mehr Licht heißt mehr Wärme und mehr Verdunstung. Stimme Temperatur und Luftfeuchte ab – siehe [[klima|Temperatur, Luftfeuchte & VPD]].`},
+ {id:'klima',cat:'Licht & Klima',img:'klima',title:'Temperatur, Luftfeuchte und VPD',lead:'Das Klima im Zelt entscheidet über Wachstum, Nährstoffaufnahme und Schimmelrisiko.',tags:['klima','vpd','luftfeuchte','temperatur','rlf','schimmel'],related:['licht','schaedlinge','trocknen','giessen'],
+  body:`## Richtwerte
+- Sämlinge und Stecklinge: 22–26 °C, 65–75 % rLF
+- Wachstumsphase: 22–28 °C, 55–70 % rLF
+- Blüte: 20–26 °C, 45–55 % rLF
+- Späte Blüte: 18–24 °C, 40–50 % rLF
+
+Nachts sollte es nicht mehr als etwa 5 °C kälter werden, sonst kondensiert Feuchtigkeit in den Blüten.
+
+## Was ist VPD?
+Das Dampfdruckdefizit (VPD) verbindet Temperatur und Luftfeuchte zu einem Wert, der beschreibt, wie stark die Pflanze Wasser verdunstet. Übliche Ziele: etwa 0,8–1,1 kPa in der Wachstumsphase und 1,0–1,5 kPa in der Blüte. Zu niedrig: die Pflanze verdunstet wenig und nimmt weniger Nährstoffe auf. Zu hoch: Stress, die Spaltöffnungen schließen sich.
+
+## Schimmel vorbeugen
+Dichte Blüten und hohe Luftfeuchte in der späten Blüte sind die häufigste Ursache für Knospenfäule. Umluft zwischen den Pflanzen, eine ausreichend starke Abluft und eine leichte [[training|Entlaubung]] helfen. Mehr zu Schädlingen und Krankheiten unter [[schaedlinge|Früh erkennen]].`},
+ {id:'giessen',cat:'Bewässerung & Düngung',img:'giessen',title:'Richtig gießen: Menge, Rhythmus, Dryback',lead:'Nach Gewicht statt nach Kalender gießen – das fördert Wurzeln und beugt Fäulnis vor.',tags:['gießen','wasser','dryback','bewässerung','runoff'],related:['duengung','crop-steering','substrat','toepfe'],
+  body:`## Nach Gewicht gießen
+Heb den Topf an oder wiege ihn. Lass ihn zwischen den Gaben spürbar leichter werden – in der Wachstumsphase etwa 15–20 % Gewichtsverlust, in später Blüte auch 25–35 %. Dieses Abtrocknen heißt Dryback und ist die Grundlage fürs [[crop-steering|Crop Steering]].
+
+## Runoff
+Gieß so, dass 10–20 % unten wieder herauslaufen. So sammeln sich keine Salze im [[substrat|Substrat]]. Miss gelegentlich die EC im Ablaufwasser und vergleiche sie mit der EC deiner Mischung – liegt sie deutlich höher, reichern sich Salze an. Mehr dazu unter [[duengung|Düngen nach EC & pH]].
+
+## Weitere Tipps
+- Zimmerwarmes Wasser (18–24 °C) schont die Wurzeln.
+- Kleine Töpfe unter 15 L brauchen in der Hauptblüte oft 1–2 Gaben täglich, große seltener, dafür mehr pro Gabe.
+- Tropfsysteme laufen mit mehreren kurzen Schüben am gleichmäßigsten. Siehe [[toepfe|Töpfe & Bewässerung]].
+
+## Im Zeltbuch
+Leg eine wiederkehrende Aufgabe „Gießen“ an. Erledigte Aufgaben landen automatisch im Journal.`},
+ {id:'duengung',cat:'Bewässerung & Düngung',img:'duengung',title:'Düngen nach EC und pH statt nach Schema F',lead:'Der Düngeplan ist ein Startpunkt. Entscheidend ist, was du misst und was die Pflanze zeigt.',tags:['dünger','ec','ph','nährstoffe','feed'],related:['mangel','giessen','substrat','crop-steering'],
+  body:`## Immer messen
+Miss EC und pH deiner fertigen Nährlösung, statt dich blind auf die Tabelle zu verlassen: Wasserqualität, Topfgröße und Sorte unterscheiden sich. Übliche pH-Werte: 5,8–6,2 in Erde und Kokos, 5,5–5,8 in reiner Hydro.
+
+## Schrittweise steigern
+Erhöhe die EC in kleinen Schritten und beobachte die Blattspitzen. Dunkelgrüne Blätter mit nach unten gebogenen Spitzen deuten auf zu viel Dünger, blasse untere Blätter auf zu wenig. Wie du Mängel genauer erkennst, steht unter [[mangel|Nährstoffmangel erkennen]].
+
+## Runoff-EC
+Liegt die EC im Ablaufwasser deutlich über der EC deiner Mischung, sammeln sich Salze im Substrat. Eine Gabe mit schwacher Nährlösung und viel Ablauf schafft Abhilfe. Siehe [[giessen|Richtig gießen]].
+
+## Spülen vor der Ernte
+Ob man in der letzten Woche nur mit Wasser gießt („Flush“), ist unter Growern umstritten. Für den Geschmack ist eine saubere, langsame [[trocknen|Trocknung]] und ein gutes [[curing|Curing]] meist wichtiger.
+
+## Im Zeltbuch
+Übernimm einen Herstellerplan im Feed-Rechner, trag im Setup die Werte deines Leitungswassers ein und speichere jede Mischung mit gemessener EC und pH – die App warnt, wenn du daneben liegst.`},
+ {id:'mangel',cat:'Pflanzenpflege',img:'mangel',title:'Nährstoffmangel erkennen',lead:'Gelbe Blätter haben viele Ursachen. Wo die Symptome auftreten, verrät schon viel.',tags:['mangel','gelbe blätter','stickstoff','magnesium','calcium','kalium','lockout'],related:['duengung','giessen','schaedlinge','klima'],
+  body:`## Zuerst den pH prüfen
+Die häufigste Ursache für scheinbaren Mangel ist ein falscher pH: Die Nährstoffe sind da, aber die Pflanze kann sie nicht aufnehmen. Miss pH und EC der Mischung und des Ablaufwassers, bevor du nachdüngst. Siehe [[duengung|Düngen nach EC & pH]].
+
+## Ältere, untere Blätter betroffen
+- Stickstoff: gleichmäßig hellgrün bis gelb, von unten nach oben. In der späten Blüte ist etwas Vergilben normal.
+- Magnesium: gelb zwischen den Blattadern, die Adern bleiben grün.
+- Kalium: braune, trockene Blattränder und -spitzen.
+- Phosphor: dunkle, matte Blätter, oft rötlich-violette Stiele und braune Flecken.
+
+## Junge, obere Blätter betroffen
+- Calcium: braune, rostige Flecken, verkrüppelte neue Blätter. Häufig in Kokos oder bei Osmosewasser ohne Cal-Mag.
+- Eisen: junge Blätter hellgelb mit grünen Adern.
+
+## Nicht verwechseln
+Helle Stellen direkt unter der Lampe sind oft Lichtstress (siehe [[licht|Licht]]). Feine helle Sprenkel oder Gespinste deuten auf [[schaedlinge|Schädlinge]]. Hängende Blätter trotz nasser Erde: zu viel gegossen (siehe [[giessen|Gießen]]).
+
+## Im Zeltbuch
+Mach ein Foto, wähl im Journal die Art „Problem“ und notier, was du änderst. So siehst du im Kalender, ob die Maßnahme gewirkt hat.`},
+ {id:'schaedlinge',cat:'Pflanzenpflege',img:'schaedlinge',title:'Schädlinge und Krankheiten früh erkennen',lead:'Wer regelmäßig mit der Lupe kontrolliert, erwischt Spinnmilben, Thripse und Mehltau, bevor sie sich ausbreiten.',tags:['schädlinge','spinnmilben','thrips','mehltau','pflanzenschutz','schimmel'],related:['klima','mangel','stecklinge'],
+  body:`## Regelmäßig kontrollieren
+Schau dir mindestens einmal pro Woche die Blattunterseiten mit einer Lupe an. Die meisten Schädlinge verstecken sich dort und zeigen sich zuerst als feine helle Sprenkel oder feine Gespinste.
+
+## Die häufigsten Probleme
+- Spinnmilben: helle Pünktchen, später Gespinste. Lieben warme, trockene Luft.
+- Thripse: silbrige Streifen und kleine schwarze Kotpunkte.
+- Trauermücken: kleine schwarze Fliegen über zu nasser Erde. Weniger gießen, Gelbtafeln aufstellen.
+- Echter Mehltau: weißer, mehliger Belag auf den Blättern, bei hoher Luftfeuchte und wenig Luftbewegung. Siehe [[klima|Klima]].
+
+## Behandeln
+Betroffene Blätter entfernen und die Pflanze möglichst isolieren. In der Wachstumsphase helfen für den Innenanbau geeignete Mittel wie Kaliseife. In der Blüte sind Nützlinge wie Raubmilben meist die sicherste Wahl, weil Sprühmittel Rückstände in der Ernte hinterlassen können.
+
+## Vorbeugen
+Sauber arbeiten, Werkzeug desinfizieren, keine fremden Pflanzen ins Zelt. Neue [[stecklinge|Stecklinge]] erst ein paar Tage getrennt beobachten.`},
+ {id:'training',cat:'Pflanzenpflege',img:'training',title:'LST, Topping und Entlaubung',lead:'Mit Training verteilst du das Licht gleichmäßig auf viele Triebe – für mehr und gleichmäßigere Blüten.',tags:['training','lst','topping','entlaubung','defoliation','scrog'],related:['licht','indica-sativa','autoflower','klima'],
+  body:`## LST (Low Stress Training)
+Beim LST biegst du Triebe zur Seite und bindest sie fest, statt sie zu schneiden. Die Pflanze wird flacher und breiter, das [[licht|Licht]] erreicht mehr Triebspitzen – ohne Wachstumspause. Auch für [[autoflower|Autoflowers]] geeignet.
+
+## Topping
+Beim Topping kappst du die Haupttriebspitze über einem Nodium. Daraus wachsen zwei neue Haupttriebe. Das kostet ein paar Tage Erholung – am besten früh in der Wachstumsphase, spätestens 1–2 Wochen vor dem Umstellen.
+
+## Entlaubung
+Große Blätter, die Licht und Luft blockieren, gezielt entfernen: sanft zu Beginn der Blüte und noch einmal moderat um Blütewoche 3. Danach zurückhaltend sein, die Pflanze braucht ihre Blätter. Weniger Blattmasse verbessert auch die Luftzirkulation und senkt das Schimmelrisiko (siehe [[klima|Klima]]).
+
+## Ruhe gönnen
+Nach jedem Eingriff 24–48 Stunden keinen weiteren Stress: kein Düngerwechsel, kein Umtopfen.
+
+## Im Zeltbuch
+Journal-Arten „Topping“, „LST“, „Entlauben“ und „Lollipop“ nutzen – dann siehst du später im Kalender, wie die Pflanze auf jeden Eingriff reagiert hat.`},
+ {id:'crop-steering',cat:'Bewässerung & Düngung',img:'steering',title:'Grundlagen Crop Steering',lead:'Mit Timing und Menge beim Gießen lenkst du die Pflanze zwischen Wachstum und Blütenbildung.',tags:['crop steering','dryback','shots','generativ','vegetativ','vwc'],related:['giessen','toepfe','substrat','duengung'],
+  body:`## Das Prinzip
+Crop Steering nutzt das Gießen gezielt, um die Pflanze zu lenken: vegetativ (mehr Wachstum und Blattmasse) oder generativ (mehr Blütenansatz, kompaktere Struktur).
+
+## Die Stellschrauben
+- Dryback: Wie stark das Substrat zwischen den Gaben abtrocknet. Größerer Dryback wirkt generativ. Grundlagen unter [[giessen|Richtig gießen]].
+- Shot-Größe und Anzahl: Viele kleine Gaben mit wenig Dryback wirken vegetativ.
+- Substrat-EC: Steigt sie über den Tag, wirkt das eher generativ.
+
+## Typischer Verlauf in der Blüte
+Frühe Blüte generativ mit moderatem Dryback (15–20 %) für Struktur, Mitte der Blüte mehr Volumen für Blütenmasse, späte Blüte wieder generativ zum Ausreifen.
+
+## Wichtig
+Konsequent messen – mit Waage oder Substratsensor – und pro Phase nur eine Stellschraube ändern. Nur so kannst du Ursache und Wirkung zuordnen. Crop Steering funktioniert am besten in Kokos oder Steinwolle (siehe [[substrat|Substratwahl]]) und in eher kleinen [[toepfe|Töpfen]].
+
+## Im Zeltbuch
+Unter „Crop Steering“ trägst du Shots, Messungen und Runoff ein. Die App berechnet den Nacht-Dryback und vergleicht ihn mit den Zielwerten deiner Phase.`},
+ {id:'ernte',cat:'Ernte & Curing',img:'ernte',title:'Den Erntezeitpunkt bestimmen',lead:'Die Trichome zeigen zuverlässiger als alles andere, wann deine Pflanze reif ist.',tags:['ernte','trichome','erntezeitpunkt','lupe'],related:['trocknen','curing','phaenos','duengung'],
+  body:`## Trichome statt Stempel
+Die Härchen (Stempel) verfärben sich oft zu früh oder zu spät und sind kein verlässliches Signal. Schau stattdessen mit einer Lupe oder einem Clip-Makro (etwa 60-fach) auf die Trichome – auf den Blüten selbst, nicht auf den kleinen Blättern.
+
+## So liest du die Trichome
+- Klar: noch nicht reif, abwarten.
+- Milchig-trüb: Die meisten Grower beginnen zu ernten, wenn der Großteil milchig ist.
+- Bernstein: Ein steigender Anteil (etwa 10–30 %) gilt als spätes Erntefenster.
+
+## Praxis
+Prüf mehrere Stellen an mehreren Pflanzen, die Spitzen reifen oft zuerst. Die Blütedauer des Breeders ist ein guter Richtwert, die Trichome entscheiden. Nach der Ernte geht es weiter mit der [[trocknen|Trocknung]] und dem [[curing|Curing]].
+
+## Im Zeltbuch
+Nutze den Trichom-Check mit Makrofoto. Unter „Ernte & Curing → Vergleichen“ legst du Fotos verschiedener Tage oder Runs nebeneinander. Nach der Ernte bewertest du rückblickend, ob der Zeitpunkt gepasst hat.`},
+ {id:'trocknen',cat:'Ernte & Curing',img:'trocknen',title:'Langsam und richtig trocknen',lead:'Die Trocknung entscheidet mit über Geruch und Geschmack. Langsam ist besser.',tags:['trocknen','trocknung','drying','60/60'],related:['ernte','curing','klima'],
+  body:`## Die Bedingungen
+Trockne dunkel, bei etwa 16–20 °C und 55–62 % Luftfeuchte, mit leichter, indirekter Luftbewegung. Die Blüten dürfen nicht direkt angeblasen werden. Bekannt ist die „60/60“-Faustregel: etwa 15,5 °C (60 °F) und 60 % Luftfeuchte.
+
+## Dauer
+Meist 7–14 Tage. Fertig ist die Trocknung, wenn kleine Stiele beim Biegen knacken, statt sich nur zu biegen. Zu schnelles Trocknen (zu warm, zu trocken) verschlechtert Geruch und Geschmack deutlich.
+
+## Ganze Äste oder einzelne Blüten
+Ganze Äste kopfüber aufzuhängen trocknet langsamer und gleichmäßiger. Trockennetze sind platzsparend, trocknen aber schneller – dann eher kühler und feuchter einstellen.
+
+## Im Zeltbuch
+Unter „Ernte & Curing → Trocknung“ trägst du Gewicht, Temperatur und Luftfeuchte ein. Die App zeigt den Gewichtsverlust gegenüber dem Nassgewicht – bei etwa 70–75 % sind Blüten meist bereit fürs [[curing|Curing]]. Richtwerte fürs Klima: [[klima|Temperatur & Luftfeuchte]].`},
+ {id:'curing',cat:'Ernte & Curing',img:'curing',title:'Curing: Reifen im Glas',lead:'Nach der Trocknung reifen die Blüten im Glas nach – Geschmack und Geruch werden runder.',tags:['curing','glas','burpen','boveda','lagern'],related:['trocknen','ernte','samen-lagern'],
+  body:`## Ins Glas
+Füll luftdichte Gläser zu etwa drei Vierteln mit den getrockneten Blüten. Ein kleines Hygrometer im Glas zeigt die Luftfeuchte. Ziel: 58–62 %.
+
+## Lüften („Burpen“)
+- Woche 1–2: täglich für ein paar Minuten öffnen.
+- Danach: etwa einmal pro Woche.
+- Über 65 % im Glas: Blüten für einige Stunden offen nachtrocknen lassen, sonst droht Schimmel.
+- Unter 55 %: zu trocken. Feuchtigkeitsregler-Beutel (z. B. 62 %) helfen.
+
+## Wie lange?
+Nach 3–4 Wochen merkst du einen deutlichen Unterschied bei Geruch und Geschmack. Viele Sorten profitieren auch von mehreren Monaten. Kühl und dunkel lagern.
+
+## Im Zeltbuch
+Unter „Ernte & Curing → Curing“ misst du jedes Glas einzeln. Mit „Lüft-Erinnerungen anlegen“ erinnert dich die App täglich und stellt nach zwei Wochen auf wöchentlich um. Zurück zur [[trocknen|Trocknung]] oder zum [[ernte|Erntezeitpunkt]].`}
+];
+/* Sortenporträts aus der Samenbank-Referenz – so steht jede Sorte auch als Beitrag zur Verfügung */
+const strainSlug=n=>'sorte-'+slug(String(n).replace(/\(.*?\)/g,''));
+function strainImg(s){if(/purple|zkittlez|punch|granddaddy/i.test(s.name))return 'indica';if(/auto/i.test(s.kind||''))return 'auto';let h=0;for(const c of s.name)h=(h*31+c.charCodeAt(0))>>>0;return 's'+(h%10+1);}
+function strainPost(s){
+  const auto=/auto/i.test(s.kind||''),sat=/sativa/i.test(s.kind||''),ind=/^indica/i.test(s.kind||'')||/indica-dominant/i.test(s.kind||'');
+  const fl=String(s.flower||'').match(/\d+/g)||[],flMax=fl.length?Math.max(...fl.map(Number)):0;
+  const tips=[];
+  if(auto)tips.push('Autoflower: direkt in den Endtopf säen, durchgehend 18/6 oder 20/4 und sanft trainieren – mehr im Artikel [[autoflower|Autoflower richtig growen]].');
+  if(sat&&!auto)tips.push('Sativa-dominant: Rechne mit deutlichem Stretch nach dem Umstellen. Früh mit [[training|LST oder Topping]] beginnen und den [[licht|Lichtabstand]] im Blick behalten.');
+  if(ind&&!auto)tips.push('Indica-dominant: kompakt mit dichten Blüten. Achte in der späten Blüte auf niedrige Luftfeuchte und gute Umluft – siehe [[klima|Klima & Schimmel vorbeugen]].');
+  if(flMax>=65&&!auto)tips.push(`Lange Blüte (bis etwa ${flMax} Tage): Plane genug Zeit ein und verlass dich für den Erntezeitpunkt auf die [[ernte|Trichome]].`);
+  if(flMax&&flMax<=56&&!auto)tips.push('Relativ kurze Blüte – gut geeignet, wenn du mehrere Runs pro Jahr planst. Siehe [[sortenwahl|Sortenwahl]].');
+  if(!tips.length)tips.push('Solider Allrounder. Für den Einstieg reichen die Grundlagen zu [[giessen|Gießen]], [[duengung|Düngen]] und [[klima|Klima]].');
+  return {id:strainSlug(s.name),cat:'Sortenporträts',img:strainImg(s),strain:s.name,title:`Sortenporträt: ${s.name}`,lead:s.desc,tags:[s.name.toLowerCase(),'sorte','strain',(s.kind||'').toLowerCase(),(s.breeder||'').toLowerCase()],related:['samen-typen',auto?'autoflower':'indica-sativa','sortenwahl','phaenos'],
+    facts:[['Breeder',s.breeder],['Typ',s.kind],['Genetik',s.gen],['Blütedauer',s.flower?`${s.flower} Tage`:'–']],
+    body:`## Steckbrief
+${s.desc} Abstammung laut gängigen Quellen: ${s.gen}. Angaben zu Herkunft und Blütedauer variieren je nach Breeder und Pheno – die Angaben deines Samenanbieters haben Vorrang.
+
+## Anbau-Hinweise
+${tips.join('\n\n')}
+
+## Samen und Genetik
+Welcher Samen-Typ passt, erklärt [[samen-typen|Samen-Typen: regulär, feminisiert, Autoflower]]. Wie du aus mehreren Pflanzen die beste auswählst, steht unter [[phaenos|Phänotypen und Pheno-Hunting]]. Und damit die Samen bis zum nächsten Run fit bleiben: [[samen-lagern|Samen richtig lagern]].`};
+}
+let _allPosts=null;
+function allPosts(){if(!_allPosts)_allPosts=[...BLOG,...SEED_LIB.map(strainPost)];return _allPosts;}
+const postById=id=>allPosts().find(p=>p.id===id);
+const plainBody=b=>String(b).replace(/\[\[([^|\]]+)\|([^\]]+)\]\]/g,'$2').replace(/^## /gm,'').replace(/^- /gm,'• ');
+/* Kompatibilität: Der Grow-Coach durchsucht TIPS (title, tags, body) */
+let _coachTips=null;
+const coachTips=()=>_coachTips||(_coachTips=allPosts().map(p=>({id:p.id,title:p.title,tags:p.tags||[],body:plainBody(p.lead+'\n\n'+p.body)})));
+const readMin=p=>Math.max(1,Math.round(String(p.body).split(/\s+/).length/200));
+/* Artikeltext → HTML, interne Links als Knöpfe */
+function artHtml(body){
+  const inl=s=>esc(s).replace(/\[\[([^|\]]+)\|([^\]]+)\]\]/g,(m,id,t)=>postById(id)?`<a class="ilink" href="#${esc(id)}" data-act="tip" data-id="${esc(id)}">${t}</a>`:t);
+  return String(body).trim().split(/\n{2,}/).map(block=>{
+    const lines=block.split('\n');
+    if(lines[0].startsWith('## ')){const h=`<h3>${inl(lines[0].slice(3))}</h3>`;const rest=lines.slice(1);return h+(rest.length?blockHtml(rest,inl):'');}
+    return blockHtml(lines,inl);
+  }).join('');
+}
+function blockHtml(lines,inl){
+  if(lines.every(l=>l.startsWith('- ')))return `<ul>${lines.map(l=>`<li>${inl(l.slice(2))}</li>`).join('')}</ul>`;
+  const li=lines.filter(l=>l.startsWith('- ')),tx=lines.filter(l=>!l.startsWith('- '));
+  return (tx.length?`<p>${inl(tx.join(' '))}</p>`:'')+(li.length?`<ul>${li.map(l=>`<li>${inl(l.slice(2))}</li>`).join('')}</ul>`:'');
+}
+function blogTile(p,wide){
+  return `<button type="button" class="btile${wide?' wide':''}" data-act="tip" data-id="${esc(p.id)}">${imgTag(p.img,wide?900:480)}<span class="bt-in"><span class="bt-cat">${esc(p.cat)}</span><b>${esc(p.title.replace(/^Sortenporträt: /,''))}</b><span class="bt-m">${readMin(p)} Min. Lesezeit${p.cat==='Sortenporträts'?' · Symbolbild':''}</span></span></button>`;
+}
+function blogHits(){
+  const q=(U.blogQ||'').trim().toLowerCase(),cat=U.blogCat||'';
+  return allPosts().filter(p=>(!cat||p.cat===cat)&&(!q||p.title.toLowerCase().includes(q)||p.lead.toLowerCase().includes(q)||(p.tags||[]).some(t=>t.includes(q))||p.body.toLowerCase().includes(q)));
+}
+function blogGrid(){
+  const list=blogHits();
+  if(!list.length)return '<div class="card empty"><p class="muted">Keine Beiträge gefunden. Versuch einen anderen Begriff.</p></div>';
+  const filtered=U.blogQ||U.blogCat;
+  if(filtered)return `<div class="btiles">${list.map((p,i)=>blogTile(p,i===0&&list.length>2)).join('')}</div>`;
+  return BLOG_CATS.map(c=>{const ps=list.filter(p=>p.cat===c);if(!ps.length)return '';const show=c==='Sortenporträts'?ps.slice(0,6):ps;
+    return `<section><div class="sec-h"><span class="sec">${esc(c)}</span>${c==='Sortenporträts'||ps.length>4?`<button class="btn small ghost" data-act="blogCat" data-c="${esc(c)}">Alle ${ps.length}</button>`:''}</div><div class="btiles">${show.map((p,i)=>blogTile(p,i===0&&c!=='Sortenporträts')).join('')}</div></section>`;}).join('');
+}
+/* Beiträge passend zur aktuellen Phase des Runs */
+function phasePosts(I){
+  if(!I)return ['samen-typen','keimung','substrat'];
+  if(I.phaseIdx<=0)return ['keimung','klima','giessen'];
+  if(I.phaseIdx===1)return ['training','duengung','licht'];
+  if(I.phaseIdx===2)return I.bloomWeek>=6?['ernte','klima','mangel']:['klima','crop-steering','schaedlinge'];
+  if(I.phaseIdx<=4)return ['ernte','trocknen','curing'];
+  return ['trocknen','curing','phaenos'];
+}
+function viewTips(){
+  const cats=['',...BLOG_CATS];
+  return `<p class="note">${allPosts().length} Beiträge zu Anbau, Samen und Sorten – mit Verweisen zwischen den Themen. Der Grow-Coach nutzt diese Artikel als Nachschlagewerk.</p>
+  <label class="search">${IC.search}<input id="blogQ" type="search" value="${esc(U.blogQ||'')}" placeholder="Suchen … z. B. Keimung, Schimmel, Haze" autocomplete="off" enterkeyhint="search"></label>
+  <div class="chips" role="group" aria-label="Kategorie">${cats.map(c=>`<button type="button" data-act="blogCat" data-c="${esc(c)}" aria-pressed="${(U.blogCat||'')===c}">${c||'Alle'}</button>`).join('')}</div>
+  <div id="blogOut" class="stack" style="gap:20px">${blogGrid()}</div>
+  <p class="note">Fotos: <a href="https://unsplash.com/?utm_source=zeltbuch&utm_medium=referral" target="_blank" rel="noopener">Unsplash</a> (Unsplash-Lizenz). Sortenporträts zeigen Symbolbilder, nicht die jeweilige Sorte.</p>`;
+}
+function viewArticle(){
+  const p=postById(U.article);if(!p)return viewTips();
+  const rel=[...(p.related||[])].map(postById).filter(Boolean);
+  if(p.cat==='Sortenporträts'){const s=SEED_LIB.find(x=>x.name===p.strain);if(s)SEED_LIB.filter(x=>x!==s&&x.kind===s.kind).slice(0,2).forEach(x=>rel.push(postById(strainSlug(x.name))));}
+  const inLib=p.strain&&strainByName(p.strain);
+  return `<div class="art-hero">${imgTag(p.img,1200)}${imgCredit(p.img)}</div>
+  <article class="art">
+    <div class="row"><span class="chip">${esc(p.cat)}</span><span class="small muted">${readMin(p)} Min. Lesezeit</span>${p.cat==='Sortenporträts'?'<span class="chip n">Symbolbild</span>':''}</div>
+    <h2>${esc(p.title)}</h2>
+    <p class="lead">${esc(p.lead)}</p>
+    ${p.facts?`<div class="keyfacts">${p.facts.map(([k,v])=>`<div><div class="k">${esc(k)}</div><div>${esc(v||'–')}</div></div>`).join('')}</div>`:''}
+    ${p.strain?`<div class="row">${inLib?`<button class="btn small" data-act="strainEdit" data-id="${inLib.id}">In deiner Genetik ansehen</button>`:`<button class="btn small primary" data-act="strainFromLib" data-n="${esc(p.strain)}">${IC.plus} In meine Genetik übernehmen</button>`}</div>`:''}
+    ${artHtml(p.body)}
+  </article>
+  ${rel.length?`<section><div class="sec-h"><span class="sec">Weiterlesen</span></div><div class="btiles">${rel.slice(0,4).map(r=>blogTile(r,false)).join('')}</div></section>`:''}
+  <button class="btn block" data-act="go" data-s="tips">Alle Beiträge</button>`;
+}
+function tipSheet(id){if(!postById(id))return;U.article=id;go('article');}
 
 
 /* ---------- UI-Zustand ---------- */
@@ -1164,12 +1691,14 @@ Object.assign(IC,{
   back:ln('<path d="M15 5l-7 7 7 7"/>'),
   shield:ln('<path d="M12 3l8 3v6c0 4.5-3.4 8-8 9-4.6-1-8-4.5-8-9V6z"/><path d="M9 12l2 2 4-4"/>'),
   video:ln('<rect x="3" y="6" width="13" height="12" rx="2"/><path d="M16 10l5-3v10l-5-3z"/>'),
-  tip:ln('<path d="M9 18h6M10 21h4"/><path d="M12 3a6 6 0 0 0-3.5 10.9c.6.44 1 1.1 1 1.9v.2h5v-.2c0-.8.4-1.46 1-1.9A6 6 0 0 0 12 3z"/>')
+  tip:ln('<path d="M9 18h6M10 21h4"/><path d="M12 3a6 6 0 0 0-3.5 10.9c.6.44 1 1.1 1 1.9v.2h5v-.2c0-.8.4-1.46 1-1.9A6 6 0 0 0 12 3z"/>'),
+  img:ln('<rect x="3.5" y="4.5" width="17" height="15" rx="3"/><circle cx="9" cy="10" r="1.8"/><path d="M4 17l5-4.5 4 3.5 3-2.5 4 3.5"/>'),
+  search:ln('<circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/>')
 });
 
 /* ---------- Grundgerüst ---------- */
 const ROOT=[['home','Start','home'],['calendar','Kalender','cal'],['media','Medien','cam'],['feed','Feed','drop'],['coach','Coach','coach']];
-const TITLES={home:'Zeltbuch',calendar:'Kalender',media:'Fotos & Videos',feed:'Feed-Rechner',coach:'Grow-Coach',tasks:'Aufgaben',plants:'Pflanzen',harvest:'Ernte & Curing',runs:'Runs & Setups',settings:'Einstellungen',steer:'Crop Steering',costs:'Verbrauch & Kosten',strains:'Genetik',tips:'Tipps',trichCompare:'Trichom-Vergleich'};
+const TITLES={home:'Zeltbuch',calendar:'Kalender',media:'Fotos & Videos',feed:'Feed-Rechner',coach:'Grow-Coach',tasks:'Aufgaben',plants:'Pflanzen',harvest:'Ernte & Curing',runs:'Runs & Setups',settings:'Einstellungen',steer:'Crop Steering',costs:'Verbrauch & Kosten',strains:'Genetik',tips:'Wissen',article:'Wissen',trichCompare:'Trichom-Vergleich'};
 function render(){
   if(U.locked){$('#top').innerHTML='';$('#main').innerHTML='';$('#nav').innerHTML='';$('#fab').hidden=true;renderLock();return;}
   renderLock();
@@ -1177,26 +1706,67 @@ function render(){
   renderTop(scr,isRoot);
   $('#nav').innerHTML=ROOT.map(([k,l,i])=>`<button data-act="go" data-s="${k}" ${scr===k?'aria-current="page"':''}><span class="ic">${IC[i]}</span><span>${l}</span></button>`).join('');
   const fab=$('#fab');fab.innerHTML=IC.plus;fab.hidden=!activeRun()||!['home','calendar','media','tasks','plants','steer','harvest'].includes(scr);
-  const V={home:viewHome,calendar:viewJournal,media:viewMedia,feed:viewFeed,coach:viewCoach,tasks:viewTasks,plants:viewPlants,harvest:viewHarvest,runs:viewRuns,settings:viewSettings,steer:viewSteer,costs:viewCosts,strains:viewStrains,tips:viewTips,trichCompare:viewTrichCompare}[scr]||viewHome;
+  const V={home:viewHome,calendar:viewJournal,media:viewMedia,feed:viewFeed,coach:viewCoach,tasks:viewTasks,plants:viewPlants,harvest:viewHarvest,runs:viewRuns,settings:viewSettings,steer:viewSteer,costs:viewCosts,strains:viewStrains,tips:viewTips,article:viewArticle,trichCompare:viewTrichCompare}[scr]||viewHome;
+  if(mediaIO)mediaIO.disconnect();
   $('#main').innerHTML=(memOnly?`<div class="banner">Der Browser erlaubt hier keinen dauerhaften Speicher. Deine Eingaben gehen beim Schließen verloren – exportiere vorher ein Backup.</div>`:'')+V();
-  hydrateMedia($('#main'));
+  hydrateMedia($('#main'));hydrateMedia($('#sheetBody'));
 }
 function renderTop(scr,isRoot){
   const P=profile(),run=activeRun(),I=run&&runInfo(run);
   const sub=run?`<button class="run-sub" data-act="runSwitch" aria-label="Run wechseln">${esc(run.name)} · Tag ${I.day} · ${esc(I.phase)} ▾</button>`:'';
-  const left=scr==='home'?`<div class="ttl"><span class="brand">Zeltbuch</span></div>`:`${isRoot?'':`<button class="back" data-act="go" data-s="home" aria-label="Zurück zum Start">${IC.back}</button>`}<div class="ttl"><h1 class="page-t">${TITLES[scr]}</h1>${sub}</div>`;
+  const left=scr==='home'?`<div class="ttl"><span class="brand">Zeltbuch</span></div>`:`${isRoot?'':`<button class="back" data-act="navBack" aria-label="Zurück">${IC.back}</button>`}<div class="ttl"><h1 class="page-t">${TITLES[scr]}</h1>${sub}</div>`;
   $('#top').innerHTML=`${left}<button class="avatar-btn" data-act="profileMenu" aria-label="Profil ${esc(P?.name||'')}">${avatar(P,40)}</button>`;
 }
-function go(s){closeSheet();U.screen=s;if(s!=='feed')U.feedView='calc';render();window.scrollTo(0,0);}
+function go(s,opt={}){
+  const st0=hs(),onOverlay=st0.sheet||st0.ov;
+  closeSheet({noHist:true});if(overlayOpen()){if(U.tl&&U.tl.open){tlStop();U.tl.open=false;}U.viewer=null;U.compare=null;$('#viewer').hidden=true;$('#viewer').innerHTML='';}
+  const same=U.screen===s&&(s!=='article'||st0.a===U.article);
+  U.screen=s;if(s!=='feed')U.feedView='calc';render();window.scrollTo(0,0);
+  const st={s,a:s==='article'?U.article:null,d:(st0.d||0)+1};
+  try{if(onOverlay||opt.replace){st.d=st0.d||0;history.replaceState(st,'');}else if(!same)history.pushState(st,'');}catch(e){}
+}
+function navBack(){if((hs().d||0)>0&&!hs().sheet&&!hs().ov)history.back();else go('home',{replace:true});}
 const plantOpts=(runId,all='Alle Pflanzen')=>[['',all],...S.plants.filter(p=>p.runId===runId).map(p=>[p.id,p.label+(p.strain?' · '+p.strain:'')])];
 const fld=(label,inner,cls='')=>`<label class="fld ${cls}"><span>${label}</span>${inner}</label>`;
 const inp=(name,val='',extra='')=>`<input name="${name}" value="${esc(val)}" ${extra}>`;
 const dec=(name,val='',extra='')=>`<input name="${name}" value="${esc(val)}" inputmode="decimal" autocomplete="off" ${extra}>`;
 const selHTML=(name,opts,val,extra='')=>`<select name="${name}" ${extra}>${opts.map(o=>{const[v,l]=Array.isArray(o)?o:[o,o];return `<option value="${esc(v)}" ${String(v)===String(val??'')?'selected':''}>${esc(l)}</option>`;}).join('')}</select>`;
+/* ---------- Datei-Auswahl (Galerie / Kamera / Drag & Drop / Einfügen) ----------
+   Gewählte Dateien liegen in PICKED[id] statt nur im <input>. So funktionieren Galerie und Kamera
+   nebeneinander, mehrfaches Nachwählen, Entfernen einzelner Dateien und Vorschau. */
+const PICKED={};
+const pickedFiles=id=>PICKED[id]||[];
 function filePick(id,name,label,accept,multiple){
-  return `<div class="fld"><span>${esc(label)}</span><div class="filepick"><label class="btn small" for="${id}">${IC.cam} Datei wählen</label><span class="small muted" data-fname="${id}">Keine Datei gewählt</span></div><input type="file" class="vh-file" id="${id}" name="${name}" accept="${accept}" ${multiple?'multiple':''}></div>`;
+  PICKED[id]=[];
+  const vid=/video/.test(accept);
+  return `<div class="fld" data-pick="${id}"><span>${esc(label)}</span>
+  <div class="picker" data-drop="${id}">
+    <label class="pick-btn" for="${id}">${IC.img}<span>Aus Galerie${multiple?' wählen':''}</span></label>
+    <label class="pick-btn" for="${id}_cam">${IC.cam}<span>Kamera</span></label>
+  </div>
+  <input type="file" class="vh-file" id="${id}" data-pickfor="${id}" data-multi="${multiple?1:0}" accept="${accept}" ${multiple?'multiple':''} tabindex="-1">
+  <input type="file" class="vh-file" id="${id}_cam" data-pickfor="${id}" data-multi="${multiple?1:0}" accept="${vid?'image/*,video/*':'image/*'}" capture="environment" tabindex="-1">
+  <div class="pv" id="pv_${id}"></div>
+  <span class="small muted" data-fname="${id}">Keine Datei gewählt</span></div>`;
 }
-function fnameTxt(files){if(!files||!files.length)return 'Keine Datei gewählt';if(files.length===1)return files[0].name;return `${files.length} Dateien gewählt`;}
+function fnameTxt(files){if(!files||!files.length)return 'Keine Datei gewählt';if(files.length===1)return `${files[0].name||'Foto'} · ${fmtMB(files[0].size)}`;return `${files.length} Dateien · ${fmtMB(files.reduce((s,f)=>s+f.size,0))}`;}
+const PV_URLS=new Map();
+function renderPicked(id){
+  const box=$('#pv_'+id),lbl=$(`[data-fname="${id}"]`),files=pickedFiles(id);
+  if(lbl)lbl.textContent=fnameTxt(files);
+  if(!box)return;
+  (PV_URLS.get(id)||[]).forEach(u=>URL.revokeObjectURL(u));
+  const urls=[];
+  box.innerHTML=files.slice(0,24).map((f,i)=>{const isV=/^video\//.test(f.type)||/\.(mp4|mov|webm|m4v|3gp)$/i.test(f.name);if(isV)return `<figure><span class="vtag">▶ Video</span><button type="button" class="x" data-act="pickDel" data-id="${id}" data-i="${i}" aria-label="Entfernen">✕</button></figure>`;const u=URL.createObjectURL(f);urls.push(u);return `<figure><img src="${u}" alt="" decoding="async" onerror="this.replaceWith(Object.assign(document.createElement('span'),{className:'vtag',textContent:'Keine Vorschau'}))"><button type="button" class="x" data-act="pickDel" data-id="${id}" data-i="${i}" aria-label="Entfernen">✕</button></figure>`;}).join('')+(files.length>24?`<figure><span class="vtag">+${files.length-24}</span></figure>`:'');
+  PV_URLS.set(id,urls);
+}
+function addPicked(id,list,multi){
+  const files=[...(list||[])].filter(f=>f&&f.size>0);if(!files.length)return;
+  PICKED[id]=multi?[...pickedFiles(id),...files]:[files[0]];
+  renderPicked(id);
+  if(id==='avatarFile')avatarPreview(PICKED[id][0]);
+}
+async function avatarPreview(file){try{const u=await squareAvatar(file);const pv=$('#avPrev');if(pv)pv.innerHTML=avatar({avatar:u},64);}catch(err){toast('Dieses Bild kann der Browser nicht lesen');}}
 function taskRow(t){const d=daysBetween(todayISO(),t.due);const c=d<0?'b':d===0?'w':'n';return `<div class="li task"><button class="tick" data-act="taskDone" data-id="${t.id}" aria-label="${esc(t.title)} erledigt">✓</button><button class="grow task-body" data-act="editTask" data-id="${t.id}"><span class="t">${esc(t.title)}</span><span class="d">${esc(repeatTxt(t.every))}${t.plantId?' · '+esc(plantName(t.plantId)):''}</span></button><span class="chip ${c}">${esc(fmtRel(t.due))}</span></div>`;}
 function needRun(){return `<section class="card empty"><span class="illo lg">${illo('Keimung')}</span><h2>Noch kein Run</h2><p class="muted">Lege deinen ersten Durchgang an, dann füllt sich die Startseite.</p><button class="btn primary" data-act="newRun">Run anlegen</button></section>`;}
 function hintBanner(){return `<div class="banner stack" style="gap:8px"><span>Richte dein Profil ein: Name, Bild und eine PIN, die deine Daten verschlüsselt.</span><div class="row"><button class="btn small primary" data-act="go" data-s="settings">Einrichten</button><button class="btn small ghost" data-act="hintOff">Später</button></div></div>`;}
@@ -1222,6 +1792,7 @@ function viewHome(){
   ${alertHtml(alerts(run,I).concat(steerAlerts(run,I)))}
   ${due.length?`<section><div class="sec-h"><span class="sec">Heute fällig</span><button class="btn small ghost" data-act="go" data-s="tasks">Alle</button></div><div class="card"><div class="list">${due.slice(0,4).map(taskRow).join('')}</div></div></section>`:''}
   ${topStrainsHtml()}
+  <section><div class="sec-h"><span class="sec">Passend zu ${esc(I.phase)}</span><button class="btn small ghost" data-act="go" data-s="tips">Alle</button></div><div class="btiles">${phasePosts(I).map(postById).filter(Boolean).map((p,i)=>blogTile(p,i===0)).join('')}</div></section>
   <section><div class="sec-h"><span class="sec">Bereiche</span></div>${tilesHtml(run,I)}</section>`;
 }
 function topStrainsHtml(){
@@ -1233,7 +1804,7 @@ function topStrainsHtml(){
 function tilesHtml(run,I){
   const t=(act,s,icon,cls,title,stat,hot)=>`<button class="tile" data-act="${act}"${s?` data-s="${s}"`:''}><span class="ti ${cls}">${IC[icon]}</span><span class="stack" style="gap:3px"><b>${title}</b><span class="s${hot?' hot':''}">${stat}</span></span></button>`;
   const setTiles=`${t('go','runs','layers','n','Runs & Setups',plural(mine('runs').length,'Run','Runs'))}${t('go','settings','gear','n','Einstellungen',profile()?.enc?'Verschlüsselt · Backup':'Profil · Sicherheit · Backup')}`;
-  if(!run)return `<div class="tiles">${t('go','feed','drop','b','Feed-Rechner','Düngepläne & Rechner')}${t('go','tips','tip','v','Tipps','Anleitungen & Wissen')}${setTiles}</div>`;
+  if(!run)return `<div class="tiles">${t('go','feed','drop','b','Feed-Rechner','Düngepläne & Rechner')}${t('go','tips','tip','v','Wissen & Blog',`${allPosts().length} Beiträge`)}${setTiles}</div>`;
   const today=todayISO(),ot=openTasks(run),od=ot.filter(x=>x.due<today).length,tdn=ot.filter(x=>x.due===today).length;
   const media=S.photos.filter(p=>p.runId===run.id),nV=media.filter(m=>m.kind==='video').length;
   const lastE=S.entries.filter(e=>e.runId===run.id).sort((a,b)=>(b.date+b.at).localeCompare(a.date+a.at))[0];
@@ -1252,7 +1823,7 @@ function tilesHtml(run,I){
   ${t('go','harvest','jar','v','Ernte & Curing',hs)}
   ${(()=>{const C=costCalc(run);return t('go','costs','euro','w','Verbrauch & Kosten',C.total>0?`${eur(C.total)} bisher`:'Dünger, Strom, Ausgaben');})()}
   ${t('go','coach','coach','v','Grow-Coach',SAMPLE?'Frag Claude zu deinem Run':'Rat & Analyse')}
-  ${t('go','tips','tip','','Tipps','Anleitungen & Wissen')}
+  ${t('go','tips','tip','','Wissen & Blog',`${allPosts().length} Beiträge & Sorten`)}
   ${setTiles}
   </div>`;
 }
@@ -1279,7 +1850,7 @@ function renderViewer(){
     const [x,y]=a.date<=b.date?[a,b]:[b,a];
     const cap=p=>{const orun=byId('runs',p.runId)||run;const I=runInfo(orun,p.date);const te=S.entries.find(e=>e.photoId===p.id&&e.tri);
       return `${orun&&orun.id!==run.id?esc(orun.name)+' · ':''}${fmtShort(p.date)} · Tag ${I.day}${I.bloomDay?' · Blüte '+I.bloomDay:''}${te?' · '+esc(triTxt(te.tri)):''}`;};
-    v.hidden=false;v.innerHTML=`<div class="v-bar"><b>Vergleich · +${plural(daysBetween(x.date,y.date),'Tag','Tage')}</b><button class="icon-btn" data-act="vClose" aria-label="Schließen">✕</button></div>
+    v.hidden=false;histMark('ov');v.innerHTML=`<div class="v-bar"><b>Vergleich · +${plural(daysBetween(x.date,y.date),'Tag','Tage')}</b><button class="icon-btn" data-act="vClose" aria-label="Schließen">✕</button></div>
     <div class="v-img"><div class="cmp"><figure><img data-media="${x.id}" alt=""><figcaption>${cap(x)}</figcaption></figure><figure><img data-media="${y.id}" alt=""><figcaption>${cap(y)}</figcaption></figure></div></div>`;
     hydrateMedia(v);return;
   }
@@ -1287,7 +1858,7 @@ function renderViewer(){
   const list=mediaList();const i=list.findIndex(p=>p.id===U.viewer);
   if(i<0){U.viewer=null;return renderViewer();}
   const p=list[i],I=runInfo(run,p.date),isV=p.kind==='video';
-  v.hidden=false;
+  v.hidden=false;histMark('ov');
   v.innerHTML=`<div class="v-bar"><b>${i+1} / ${list.length}</b><button class="icon-btn" data-act="vClose" aria-label="Schließen">✕</button></div>
   <div class="v-img">${isV?`<video data-media="${p.id}" controls playsinline preload="metadata"></video>`:`<img data-media="${p.id}" alt="">`}</div>
   <div class="v-meta">${fmtDate(p.date)} · Tag ${I.day}${I.bloomDay?' · Blüte Tag '+I.bloomDay:''}${p.plantId?' · '+esc(plantName(p.plantId)):''}${p.size?` · ${fmtMB(p.size)}`:''}${p.orig&&p.orig>p.size?` (vorher ${fmtMB(p.orig)})`:''}${p.note?'<br>'+esc(p.note):''}</div>
@@ -1297,16 +1868,60 @@ function renderViewer(){
   <button class="icon-btn" data-act="vNav" data-d="1" ${i>=list.length-1?'disabled':''} aria-label="Älter">›</button></div>`;
   hydrateMedia(v);
 }
-async function compress(file,max=1600,q=0.82){
+/* Bild einmal dekodieren (berücksichtigt die EXIF-Drehung), dann beliebig viele Größen erzeugen */
+async function decodeImage(file){
   const url=URL.createObjectURL(file);
   try{
-    const img=await new Promise((res,rej)=>{const im=new Image();im.onload=()=>res(im);im.onerror=rej;im.src=url;});
-    const s=Math.min(1,max/Math.max(img.naturalWidth,img.naturalHeight));
-    const c=document.createElement('canvas');c.width=Math.round(img.naturalWidth*s);c.height=Math.round(img.naturalHeight*s);
-    c.getContext('2d').drawImage(img,0,0,c.width,c.height);
-    const out=await new Promise(res=>c.toBlob(b=>res(b),'image/jpeg',q));
-    return out&&(out.size<file.size||max<1000)?out:file;
-  }catch(e){return file;}finally{URL.revokeObjectURL(url);}
+    const im=await new Promise((res,rej)=>{const x=new Image();x.decoding='async';x.onload=()=>res(x);x.onerror=()=>rej(new Error('decode'));x.src=url;});
+    return {src:im,w:im.naturalWidth,h:im.naturalHeight,done:()=>URL.revokeObjectURL(url)};
+  }catch(e){
+    URL.revokeObjectURL(url);
+    if(window.createImageBitmap){try{const b=await createImageBitmap(file);return {src:b,w:b.width,h:b.height,done:()=>b.close&&b.close()};}catch(e2){}}
+    const err=new Error('decode');err.code='decode';throw err;
+  }
+}
+const canvasBlob=(c,q)=>new Promise(res=>c.toBlob(b=>res(b),'image/jpeg',q));
+async function imageVariants(file,sizes){
+  const d=await decodeImage(file);
+  try{
+    const out=[];
+    for(const [max,q] of sizes){
+      const s=Math.min(1,max/Math.max(d.w,d.h));
+      const c=document.createElement('canvas');c.width=Math.max(1,Math.round(d.w*s));c.height=Math.max(1,Math.round(d.h*s));
+      const ctx=c.getContext('2d');ctx.imageSmoothingQuality='high';ctx.drawImage(d.src,0,0,c.width,c.height);
+      const b=await canvasBlob(c,q);c.width=c.height=0;
+      /* Original nur behalten, wenn es kleiner ist UND ein Format hat, das jeder Browser anzeigen kann */
+      const webSafe=/^image\/(jpeg|png|webp|gif)$/.test(file.type);
+      out.push(!b?file:(max<1000||b.size<file.size||!webSafe)?b:file);
+    }
+    return out;
+  }finally{d.done();}
+}
+async function compress(file,max=1600,q=0.82){try{return (await imageVariants(file,[[max,q]]))[0];}catch(e){return file;}}
+/* Aufnahmedatum aus den EXIF-Daten (JPEG). Die Android-Fotoauswahl setzt „zuletzt geändert“ oft auf heute. */
+async function exifDate(file){
+  try{
+    if(!/jpe?g/i.test(file.type)&&!/\.jpe?g$/i.test(file.name||''))return null;
+    const v=new DataView(await file.slice(0,262144).arrayBuffer());
+    if(v.getUint16(0)!==0xFFD8)return null;
+    let o=2;
+    while(o+10<v.byteLength){
+      const mk=v.getUint16(o),len=v.getUint16(o+2);
+      if(mk===0xFFE1&&v.getUint32(o+4)===0x45786966){
+        const t=o+10,le=v.getUint16(t)===0x4949,u16=p=>v.getUint16(p,le),u32=p=>v.getUint32(p,le);
+        const ifd=(off,tags)=>{const n=u16(t+off),r={};for(let i=0;i<n;i++){const e=t+off+2+i*12,tag=u16(e);if(tags.includes(tag))r[tag]=u32(e+8);}return r;};
+        const str=off=>{let s='';for(let i=0;i<19;i++)s+=String.fromCharCode(v.getUint8(t+off+i));return s;};
+        const i0=ifd(u32(t+4),[0x8769,0x0132]);let s=null;
+        if(i0[0x8769]){const ex=ifd(i0[0x8769],[0x9003,0x9004]);const p=ex[0x9003]||ex[0x9004];if(p)s=str(p);}
+        if(!s&&i0[0x0132])s=str(i0[0x0132]);
+        const m=s&&s.match(/^(\d{4}):(\d{2}):(\d{2})/);
+        return m&&m[1]>'1990'?`${m[1]}-${m[2]}-${m[3]}`:null;
+      }
+      if((mk&0xFF00)!==0xFF00)break;
+      o+=2+len;
+    }
+  }catch(e){}
+  return null;
 }
 function squareAvatar(file){return new Promise((res,rej)=>{const url=URL.createObjectURL(file);const im=new Image();im.onload=()=>{const s=Math.min(im.naturalWidth,im.naturalHeight);const c=document.createElement('canvas');c.width=c.height=256;c.getContext('2d').drawImage(im,(im.naturalWidth-s)/2,(im.naturalHeight-s)/2,s,s,0,0,256,256);URL.revokeObjectURL(url);res(c.toDataURL('image/jpeg',0.82));};im.onerror=()=>{URL.revokeObjectURL(url);rej(new Error('bild'));};im.src=url;});}
 function seekTo(v,t){return new Promise(res=>{if(Math.abs(v.currentTime-t)<0.01){res();return;}const done=()=>{v.removeEventListener('seeked',done);res();};v.addEventListener('seeked',done);v.currentTime=t;setTimeout(done,3000);});}
@@ -1348,23 +1963,26 @@ async function compressVideo(file,onProg,stop){
 function mediaSheet(preDate,prePlant){
   const run=activeRun();if(!run)return toast('Lege zuerst einen Run an');
   openSheet('Fotos & Videos hinzufügen',
-   filePick('filesInput','files','Dateien','image/*,video/*',true)+
-   `<label class="check"><input type="checkbox" name="fileDate" ${preDate?'':'checked'}> Datum aus der Datei übernehmen</label>`+
+   filePick('filesInput','files','Fotos & Videos','image/*,video/*',true)+
+   `<p class="note" style="margin-top:-4px">Am Computer kannst du Dateien auch hierher ziehen oder mit Strg+V einfügen.</p>`+
+   `<label class="check"><input type="checkbox" name="fileDate" ${preDate?'':'checked'}> Aufnahmedatum aus dem Foto übernehmen</label>`+
    `<div class="grid2">${fld(preDate?'Datum':'Sonst Datum',inp('date',preDate||todayISO(),'type="date"'))}${fld('Pflanze',selHTML('plantId',plantOpts(run.id,'Ganzes Zelt'),prePlant||''))}</div>`+
    fld('Notiz',inp('note','','placeholder="optional"'))+
    `<p class="note">Fotos werden auf 1600 px verkleinert, Videos auf höchstens 720p neu kodiert. Das Komprimieren eines Videos dauert etwa so lange wie das Video selbst – lass die App dabei geöffnet.</p>
    <div id="upStat" class="stack" style="gap:8px" hidden><span id="upTxt" class="small"></span><div class="prog"><i id="upBar"></i></div><button type="button" class="btn small" data-act="upCancel">Abbrechen</button></div>`,
    'Hochladen',
    async(d,f)=>{
-     const files=[...($('input[type=file]',f).files||[])];if(!files.length){toast('Wähle mindestens eine Datei');return false;}
-     U.upCancel=false;$('#upStat').hidden=false;
+     const files=pickedFiles('filesInput');if(!files.length){toast('Wähle mindestens ein Foto oder Video');return false;}
+     U.upCancel=false;U.uploading=true;$('#upStat').hidden=false;
      const txt=m=>{const e=$('#upTxt');if(e)e.textContent=m;},bar=p=>{const e=$('#upBar');if(e)e.style.width=Math.round(p*100)+'%';};
-     let orig=0,final=0,ok=0,skipped=[];
+     let orig=0,final=0,ok=0,skipped=[],badFmt=0;
      for(let i=0;i<files.length;i++){
        if(U.upCancel)break;
        const file=files[i],isV=/^video\//.test(file.type)||/\.(mp4|mov|webm|m4v|3gp)$/i.test(file.name);
        const pre=files.length>1?`Datei ${i+1}/${files.length}: `:'';
-       const id=uid(),dt=d.fileDate&&file.lastModified?isoOf(new Date(file.lastModified)):d.date;
+       const id=uid();
+       let dt=d.date;
+       if(d.fileDate){const ex=isV?null:await exifDate(file);dt=ex||(file.lastModified?isoOf(new Date(file.lastModified)):d.date);}
        try{
          if(isV){
            txt(pre+'Video wird komprimiert …');bar(0);
@@ -1375,16 +1993,18 @@ function mediaSheet(preDate,prePlant){
            save('photos',{id,runId:run.id,plantId:d.plantId,date:dt,note:d.note,kind:'video',dur:r.dur,size:r.blob.size,orig:file.size,thumb:!!r.thumb,at:nowStamp()});
            orig+=file.size;final+=r.blob.size;ok++;
          }else{
-           txt(pre+'Foto wird verkleinert …');bar(0.5);
-           const big=await compress(file,1600,0.82),th=await compress(file,400,0.72);
+           txt(pre+'Foto wird verkleinert …');bar((i+0.5)/files.length);
+           const [big,th]=await imageVariants(file,[[1600,0.82],[400,0.72]]);
            await saveMedia(id,PID(),big);await saveMedia(id+'_t',PID(),th);
            save('photos',{id,runId:run.id,plantId:d.plantId,date:dt,note:d.note,kind:'image',size:big.size,orig:file.size,thumb:true,at:nowStamp()});
-           orig+=file.size;final+=big.size;ok++;bar(1);
+           orig+=file.size;final+=big.size;ok++;bar((i+1)/files.length);
          }
-       }catch(e){console.error(e);skipped.push(file.name);}
+       }catch(e){console.error(e);if(e&&e.code==='decode')badFmt++;skipped.push(file.name);}
      }
-     await flush();
-     if(skipped.length)toast(`${plural(ok,'Datei','Dateien')} gespeichert, ${skipped.length} übersprungen`);
+     await flush();U.uploading=false;
+     PICKED.filesInput=[];
+     if(badFmt)toast(`${plural(badFmt,'Datei','Dateien')} in einem Format, das der Browser nicht lesen kann (z. B. HEIC/RAW). Bitte als JPG speichern.`);
+     else if(skipped.length)toast(`${plural(ok,'Datei','Dateien')} gespeichert, ${skipped.length} übersprungen`);
      else if(ok)toast(`${plural(ok,'Datei','Dateien')} gespeichert${orig>final?` · ${Math.round((1-final/orig)*100)} % kleiner`:''}`);
      return ok>0||U.upCancel;
    });
@@ -1497,7 +2117,7 @@ function viewSettings(){
 
   <section><div class="sec-h"><span class="sec">Profil löschen</span></div><div class="card stack"><p class="small">Löscht das Profil „${esc(P.name)}“ mit allen Runs, Plänen, Fotos und Videos von diesem Gerät.</p><button class="btn small danger" data-act="profileDel" data-confirm>Profil endgültig löschen</button></div></section>
 
-  <section class="card stack"><span class="sec">Über</span><p class="note">Zeltbuch · Testversion 7. Herstellerpläne Stand ${LIB_ASOF}. Erinnerungen erscheinen in der App; Push-Benachrichtigungen kommen mit der Android-Version.</p></section>`;
+  <section class="card stack"><span class="sec">Über</span><p class="note">Zeltbuch · Version 8. Herstellerpläne Stand ${LIB_ASOF}. Erinnerungen erscheinen in der App; Push-Benachrichtigungen kommen mit der Android-Version.</p></section>`;
 }
 function importBanner(imp){
   if(imp.pending)return `<div class="banner stack" style="gap:8px"><p><b>${esc(imp.name)}</b> ist mit einem Passwort geschützt.</p><input type="password" id="impPw" placeholder="Backup-Passwort" autocomplete="off"><div class="row"><button class="btn small primary" data-act="importDecrypt">Entschlüsseln</button><button class="btn small ghost" data-act="importCancel">Abbrechen</button></div></div>`;
@@ -1541,12 +2161,15 @@ async function tryUnlock(secret){
   else{registerFail(p.id);U.pinEntry='';U.pinMsg=`Falsch${p.lock?.type==='pass'?'es Passwort':'e PIN'}`;renderLock();const d=$('#pinDots')||$('#passIn');if(d)d.classList.add('shake');}
 }
 function resetUi(){Object.assign(U,{screen:'home',feedView:'calc',planId:null,weekId:null,weekPlan:null,tankL:null,jType:'',photoPlant:'',viewer:null,compareA:null,compare:null,importData:null});if(U.coach.ctl)U.coach.ctl.abort();U.coach={turns:[],ctl:null,busy:false};closeSheet();renderViewer();}
-function switchProfile(pid){META.activeProfile=pid;saveMeta();resetUi();U.locked=false;U.pinEntry='';U.pinMsg='';render();window.scrollTo(0,0);}
+function switchProfile(pid){META.activeProfile=pid;saveMeta();resetUi();U.locked=false;U.pinEntry='';U.pinMsg='';render();window.scrollTo(0,0);sbInit(pid);}
 async function lockApp(stage){
-  closeSheet();U.viewer=null;U.compare=null;renderViewer();
+  closeSheet({noHist:true});U.viewer=null;U.compare=null;if(U.tl&&U.tl.open){tlStop();U.tl.open=false;}renderViewer();
+  if(U.coach.ctl)U.coach.ctl.abort();U.coach={turns:[],ctl:null,busy:false};
+  try{const st=hs();if(st.sheet||st.ov)history.replaceState({s:st.s||'home',d:st.d||0},'');}catch(e){}
   const pid=PID(),p=profile();
   U.locked=true;U.lockStage=stage==='pin'&&p?.lock?.type==='pass'?'pass':stage;U.lockTarget=pid;U.pinEntry='';U.pinMsg='';
   render();
+  try{await Promise.race([sbFlushPush(true),sleep(4000)]);}catch(e){}sbStop();
   if(p&&p.enc)await lockMem(pid);
 }
 
@@ -1561,7 +2184,7 @@ function profileSheet(p){
    isNew?'Profil anlegen':'Speichern',
    async(d,f)=>{
      if(!d.name){toast('Name angeben');return false;}
-     const file=$('#avatarFile',f)?.files?.[0];
+     const file=pickedFiles('avatarFile')[0];
      const o=p||{id:uid(),created:nowStamp(),autoLock:2};o.name=d.name.slice(0,40);o.color=d.color||col;
      if(d.noAvatar)delete o.avatar;
      if(file){try{o.avatar=await squareAvatar(file);}catch(e){toast('Bild konnte nicht gelesen werden');return false;}}
@@ -1697,6 +2320,7 @@ function planEdit(el){
 function pinPress(k){if(U.pinBusy)return;if(U.pinEntry.length>=12)return;U.pinEntry+=k;U.pinMsg='';renderLock();}
 const A={
   go:el=>go(el.dataset.s),
+  navBack:()=>navBack(),
   tab:el=>go(el.dataset.s),
   tasksAll:()=>go('tasks'),
   journal:()=>{U.jView='list';go('calendar');},
@@ -1711,6 +2335,7 @@ const A={
   addMediaFor:el=>mediaSheet(null,el.dataset.id),
   newEntry:()=>entrySheet(), addMedia:()=>mediaSheet(), phase:()=>phaseSheet(),
   upCancel:()=>{U.upCancel=true;},
+  pickDel:el=>{const id=el.dataset.id;PICKED[id]=pickedFiles(id).filter((_,i)=>i!==+el.dataset.i);renderPicked(id);},
   mKind:el=>{U.mKind=el.dataset.k;render();},
   jView:el=>{U.jView=el.dataset.v;render();},
   calPick:el=>{U.calSel=el.dataset.d;render();const dp=$('.day-panel');if(dp&&dp.getBoundingClientRect().top>window.innerHeight-160)dp.scrollIntoView({behavior:'smooth',block:'start'});},
@@ -1722,6 +2347,7 @@ const A={
   taskDone:el=>{const t=byId('tasks',el.dataset.id);if(!t)return;completeTask(t);if(t.type!=='Trichome')render();},
   trich:()=>trichSheet(null), review:el=>reviewSheet(byId('plants',el.dataset.id)), report:el=>reportSheet(el.dataset.id),
   tip:el=>tipSheet(el.dataset.id),
+  blogCat:el=>{U.blogCat=el.dataset.c||'';if(U.screen!=='tips'){go('tips');return;}$$('.chips [data-act=blogCat]').forEach(b=>b.setAttribute('aria-pressed',(b.dataset.c||'')===U.blogCat));const o=$('#blogOut');if(o)o.innerHTML=blogGrid();},
   reportSave:async el=>{const run=byId('runs',el.dataset.id);if(!run)return;await offerFile(`zeltbuch-bericht-${slug(run.name)}.md`,new Blob([reportMd(run)],{type:'text/markdown'}),'Bericht gespeichert');},
   coachStop:()=>{if(U.coach.ctl)U.coach.ctl.abort();}, coachReset:()=>{if(U.coach.ctl)U.coach.ctl.abort();U.coach={turns:[],ctl:null,busy:false};renderCoachLog(null);},
   coachChip:el=>{const ta=$('#coachForm [name=q]');if(ta){ta.value=el.dataset.q;ta.focus();}},
@@ -1734,7 +2360,7 @@ const A={
     remove(store,id);toast('Gelöscht');render();renderViewer();},
   openMedia:el=>{const p=byId('photos',el.dataset.id);if(p&&U.photoPlant&&p.plantId!==U.photoPlant)U.photoPlant='';if(p&&U.mKind!=='all'&&((U.mKind==='video')!==(p.kind==='video')))U.mKind='all';U.viewer=el.dataset.id;renderViewer();},
   openMediaFor:el=>{const pid=el.dataset.plant;if(pid){U.photoPlant=pid;U.mKind='all';}U.viewer=el.dataset.id;renderViewer();},
-  vClose:()=>{U.viewer=null;U.compare=null;renderViewer();render();},
+  vClose:()=>{U.viewer=null;U.compare=null;renderViewer();render();histUnmark('ov');},
   vNav:el=>{const list=mediaList();const i=list.findIndex(p=>p.id===U.viewer)+Number(el.dataset.d);if(list[i]){U.viewer=list[i].id;renderViewer();}},
   vCompare:el=>{const id=el.dataset.id;if(!U.compareA){U.compareA=id;toast('Foto A gewählt – öffne jetzt ein zweites');U.viewer=null;renderViewer();render();}else if(U.compareA!==id){U.compare=[U.compareA,id];U.compareA=null;U.viewer=null;renderViewer();}},
   triPick:el=>{const id=el.dataset.id;if(!U.compareA){U.compareA=id;toast('Foto A gewählt – tippe ein zweites an');render();}else if(U.compareA!==id){U.compare=[U.compareA,id];U.compareA=null;render();renderViewer();}},
@@ -1774,6 +2400,9 @@ const A={
   forgotDelete:async()=>{const t=U.lockTarget;await deleteProfile(t);U.lockStage='pick';U.lockTarget=null;renderLock();toast('Profil gelöscht');}
 };
 document.addEventListener('click',e=>{
+  /* Datei-Auswahl öffnet sich: Auto-Sperre so lange aussetzen (Android schickt die Seite dabei in den Hintergrund) */
+  const fl=e.target.closest('label[for]');
+  if((fl&&document.getElementById(fl.htmlFor)?.type==='file')||(e.target.type==='file'))U.pickerAt=Date.now();
   const el=e.target.closest('[data-act]');if(!el||el.disabled)return;
   if(el.hasAttribute('data-confirm')&&!el.classList.contains('armed')){
     e.preventDefault();el.classList.add('armed');el.dataset.label=el.innerHTML;el.innerHTML=el.classList.contains('icon-btn')?'?':'Sicher?';
@@ -1789,11 +2418,12 @@ document.addEventListener('input',e=>{
   const el=e.target;
   if(el.dataset.fc==='tank'){U.tankL=el.value;$('#feedOut').innerHTML=feedOut();}
   else if(el.dataset.tri){const f=el.form;const t={c:+f.elements.namedItem('c').value,m:+f.elements.namedItem('m').value,a:+f.elements.namedItem('a').value};['c','m','a'].forEach(k=>{const o=$('#tv_'+k);if(o)o.textContent=t[k];});$('#triOut').innerHTML=triPreview(t);}
+  else if(el.id==='blogQ'){U.blogQ=el.value;clearTimeout(U._bq);U._bq=setTimeout(()=>{const o=$('#blogOut');if(o)o.innerHTML=blogGrid();},120);}
   else if(el.id==='seedLibQ'){const out=$('#seedLibOut');if(out)out.innerHTML=seedLibOut(el.value);}
 });
 document.addEventListener('change',async e=>{
   const el=e.target;
-  if(el.type==='file'&&el.id){const lbl=$(`[data-fname="${el.id}"]`);if(lbl)lbl.textContent=fnameTxt(el.files);}
+  if(el.type==='file'&&el.dataset.pickfor){U.pickerAt=0;addPicked(el.dataset.pickfor,el.files,el.dataset.multi==='1');el.value='';return;}
   if(el.id==='fPlan'||el.id==='ePlan'){U.planId=el.value;U.weekPlan=null;render();return;}
   if(el.id==='fWeek'){U.weekId=el.value;$('#feedOut').innerHTML=feedOut();return;}
   if(el.id==='jType'){U.jType=el.value;render();return;}
@@ -1802,7 +2432,6 @@ document.addEventListener('change',async e=>{
   if(el.id==='photoPlant'){U.photoPlant=el.value;render();return;}
   if(el.id==='importFile'){readImport(el.files[0]);el.value='';return;}
   if(el.id==='autoLock'){const p=profile();p.autoLock=+el.value;save('profiles',p);toast('Gespeichert');return;}
-  if(el.id==='avatarFile'&&el.files[0]){try{const u=await squareAvatar(el.files[0]);const pv=$('#avPrev');if(pv)pv.innerHTML=avatar({avatar:u},64);}catch(err){}return;}
   if(el.dataset.pe){planEdit(el);}
 });
 document.addEventListener('keydown',e=>{
@@ -1811,11 +2440,22 @@ document.addEventListener('keydown',e=>{
   else if(e.key==='Backspace'){e.preventDefault();U.pinEntry=U.pinEntry.slice(0,-1);renderLock();}
   else if(e.key==='Enter'&&U.pinEntry){e.preventDefault();tryUnlock(U.pinEntry);}
 });
+/* Auto-Sperre. Ausnahmen: Datei-Auswahl ist offen (max. 10 Min.) oder ein Upload läuft –
+   sonst schließt die Sperre das Formular und die gewählten Fotos gehen verloren. */
+const pickerBusy=()=>U.uploading||(U.pickerAt&&Date.now()-U.pickerAt<600000);
 document.addEventListener('visibilitychange',()=>{
   const p=profile();
-  if(document.hidden){U.hiddenAt=Date.now();if(p&&p.enc&&!U.locked&&(p.autoLock??2)===0)lockApp('pin');return;}
+  if(document.hidden){U.hiddenAt=Date.now();if(!pickerBusy()&&p&&p.enc&&!U.locked&&(p.autoLock??2)===0)lockApp('pin');return;}
+  if(pickerBusy()){U.hiddenAt=0;return;}
   if(p&&p.enc&&!U.locked&&(p.autoLock??2)>0&&U.hiddenAt&&Date.now()-U.hiddenAt>=(p.autoLock??2)*60000)lockApp('pin');
 });
+document.addEventListener('cancel',e=>{if(e.target.type==='file')U.pickerAt=0;},true);
+window.addEventListener('focus',()=>{if(U.pickerAt&&!U.uploading)setTimeout(()=>{if(U.pickerAt&&Date.now()-U.pickerAt>1500)U.pickerAt=0;},4000);});
+/* Drag & Drop und Einfügen (Desktop) */
+document.addEventListener('dragover',e=>{const z=e.target.closest&&e.target.closest('[data-drop]');if(z){e.preventDefault();z.classList.add('drag');}});
+document.addEventListener('dragleave',e=>{const z=e.target.closest&&e.target.closest('[data-drop]');if(z)z.classList.remove('drag');});
+document.addEventListener('drop',e=>{const z=e.target.closest&&e.target.closest('[data-drop]');if(!z)return;e.preventDefault();z.classList.remove('drag');const id=z.dataset.drop,inp=$('#'+id);addPicked(id,e.dataTransfer.files,inp?.dataset.multi==='1');});
+document.addEventListener('paste',e=>{const z=$('#sheet:not([hidden]) [data-drop]')||$('#main [data-drop]');if(!z)return;const files=[...(e.clipboardData?.files||[])].filter(f=>/^(image|video)\//.test(f.type));if(!files.length)return;e.preventDefault();const id=z.dataset.drop;addPicked(id,files,$('#'+id)?.dataset.multi==='1');});
 
 /* ---------- Start ---------- */
 function seed(pid){
@@ -1846,9 +2486,10 @@ async function migrate(){
 async function boot(){
   try{idb=await openDB();}catch(e){idb=null;memOnly=true;}
   if(idb){
-    try{S.profiles=await dbAll('profiles');}catch(e){S.profiles=[];}
-    try{const m=await dbAll('meta');META=m.find(x=>x.id==='app')||META;}catch(e){}
-    for(const st of REC_STORES){let rows=[];try{rows=await dbAll(st);}catch(e){}S[st]=rows.filter(r=>!r._e);ENC[st]=rows.filter(r=>r._e);}
+    let all={};try{all=await dbAllMany(['profiles','meta',...REC_STORES]);}catch(e){console.error(e);}
+    S.profiles=all.profiles||[];
+    META=(all.meta||[]).find(x=>x.id==='app')||META;
+    for(const st of REC_STORES){const rows=all[st]||[];S[st]=rows.filter(r=>!r._e);ENC[st]=rows.filter(r=>r._e);}
   }
   META.runBy=META.runBy||{};META.fails=META.fails||{};
   if(!S.profiles.length){
@@ -1859,9 +2500,12 @@ async function boot(){
   if(!byId('profiles',META.activeProfile)){META.activeProfile=S.profiles[0].id;saveMeta();}
   await migrate();
   if(!META.seeded)seed(PID());
+  try{history.replaceState({s:'home',d:0},'');}catch(e){}
   const P=profile();
   if(isLocked(P)){U.locked=true;U.lockStage=P.lock?.type==='pass'?'pass':'pin';U.lockTarget=P.id;}
   render();
+  if(!U.locked)sbInit();
+  try{if('serviceWorker' in navigator&&location.protocol==='https:'&&!/claude|anthropic/i.test(location.hostname))navigator.serviceWorker.register('sw.js').catch(()=>{});}catch(e){}
   try{if(navigator.storage){navigator.storage.persist&&navigator.storage.persist().catch(()=>{});if(navigator.storage.estimate)U.storage=await navigator.storage.estimate();}}catch(e){}
   try{if(window.claude&&window.claude.use){
     window.claude.use('downloads').then(n=>{DL=n;}).catch(()=>{});
@@ -2265,12 +2909,12 @@ function viewStrains(){
   ${known.length?`<section><div class="sec-h"><span class="sec">Aus deinen Runs, noch nicht in der Genetik</span></div><div class="card"><div class="list">${known.map(n=>`<div class="li" style="align-items:center"><span class="grow">${esc(n)}</span><button class="btn small" data-act="strainFrom" data-n="${esc(n)}">Übernehmen</button></div>`).join('')}</div></div></section>`:''}
   <section><div class="sec-h"><span class="sec">Samenbank-Referenz</span></div>
   <div class="card stack" style="gap:10px">
-  <p class="small muted">Kuratierte Übersicht bekannter Sorten mit Breeder, Typ, Genetik und ungefährer Blütedauer – als Nachschlagehilfe, keine vollständige Datenbank.</p>
+  <p class="small muted">Kuratierte Übersicht bekannter Sorten mit Breeder, Typ, Genetik und ungefährer Blütedauer – als Nachschlagehilfe, keine vollständige Datenbank. Zu jeder Sorte gibt es ein <button type="button" class="ilink" data-act="blogCat" data-c="Sortenporträts">Sortenporträt im Wissensbereich</button>.</p>
   <input id="seedLibQ" placeholder="Sorte suchen … z. B. OG Kush, Haze, Auto" autocomplete="off">
   <div id="seedLibOut"></div>
   </div></section>`;
 }
-function seedLibRow(s){return `<div class="li"><span class="grow"><b>${esc(s.name)}</b><br><span class="small muted">${esc([s.breeder,s.kind,s.gen].filter(Boolean).join(' · '))}${s.flower?` · Blüte ${esc(s.flower)} Tage`:''}</span><br><span class="small">${esc(s.desc)}</span></span><button type="button" class="btn small" data-act="strainFromLib" data-n="${esc(s.name)}">Übernehmen</button></div>`;}
+function seedLibRow(s){return `<div class="li"><span class="grow"><b>${esc(s.name)}</b><br><span class="small muted">${esc([s.breeder,s.kind,s.gen].filter(Boolean).join(' · '))}${s.flower?` · Blüte ${esc(s.flower)} Tage`:''}</span><br><span class="small">${esc(s.desc)}</span></span><span class="stack" style="gap:6px"><button type="button" class="btn small" data-act="strainFromLib" data-n="${esc(s.name)}">Übernehmen</button><button type="button" class="btn small ghost" data-act="tip" data-id="${esc(strainSlug(s.name))}">Porträt</button></span></div>`;}
 function seedLibOut(q){const hits=seedLibHits(q);return q?(hits.length?`<div class="list">${hits.map(seedLibRow).join('')}</div>`:'<p class="muted small">Keine Treffer in der Referenzliste.</p>'):'';}
 function flowerAvg(range){const m=String(range||'').match(/\d+/g);if(!m||!m.length)return '';return m.length>1?Math.round((+m[0]+ +m[1])/2):+m[0];}
 function strainSheet(s,preName,pre){
@@ -2304,7 +2948,7 @@ function renderTl(){
   const v=$('#viewer');const run=activeRun();
   if(!U.tl.open||!run){tlStop();return;}
   const list=tlList();U.tl.i=Math.min(U.tl.i,Math.max(0,list.length-1));
-  v.hidden=false;
+  v.hidden=false;histMark('ov');
   v.innerHTML=`<div class="v-bar"><b id="tlTitle">Zeitraffer · ${list.length?U.tl.i+1:0}/${list.length}</b><button class="icon-btn" data-act="tlClose" aria-label="Schließen">✕</button></div>
   <div class="v-img">${list.length?'<img id="tlImg" alt="">':'<p>Keine Fotos für diese Auswahl.</p>'}</div>
   <div class="v-meta" id="tlMeta"></div>
@@ -2376,7 +3020,7 @@ Object.assign(A,{
   strainNew:()=>strainSheet(null), strainEdit:el=>strainSheet(byId('strains',el.dataset.id)), strainFrom:el=>strainSheet(null,el.dataset.n), cutAdd:el=>cutSheet(el.dataset.id),
   strainFromLib:el=>{const lib=SEED_LIB.find(x=>x.name===el.dataset.n);strainSheet(null,null,lib);},
   tlOpen:()=>{U.tl.open=true;U.tl.i=0;U.tl.plant=U.photoPlant||'';renderTl();},
-  tlClose:()=>{tlStop();U.tl.open=false;$('#viewer').hidden=true;$('#viewer').innerHTML='';},
+  tlClose:()=>{tlStop();U.tl.open=false;$('#viewer').hidden=true;$('#viewer').innerHTML='';histUnmark('ov');},
   tlPlay:()=>tlPlay(), tlExport:()=>tlExport()
 });
 document.addEventListener('change',e=>{
@@ -2389,118 +3033,184 @@ document.addEventListener('change',e=>{
 });
 document.addEventListener('input',e=>{if(e.target.id==='tlPos'){tlStop();const b=$('[data-act=tlPlay]');if(b)b.textContent='Abspielen';tlShow(+e.target.value);}});
 
-/* ================= Cloud-Sync (Supabase) ================= */
+/* ================= Cloud-Sync (Supabase) =================
+   - Die Bibliothek wird erst geladen, wenn ein Profil die Cloud nutzt (schnellerer Start).
+   - Jede Anmeldung gehört zu genau einem lokalen Profil (eigener Sitzungsspeicher je Profil) –
+     vorher konnten Daten eines Profils in das Konto eines anderen Profils wandern.
+   - Seitenweises Laden (Supabase liefert max. 1000 Zeilen pro Abfrage), inkrementell seit dem letzten Abgleich.
+   - Löschungen werden als Markierung synchronisiert, Konflikte nach Änderungszeit (_mt) aufgelöst.
+   - Änderungen werden gesammelt und gebündelt hochgeladen; bei Fehlern später erneut versucht. */
 const SB_URL='https://eertbwiiovzgjwrzvzrs.supabase.co';
 const SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVlcnRid2lpb3Z6Z2p3cnp2enJzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTA0OTg4NjIsImV4cCI6MjEwNjA3NDg2Mn0.jpdTLNPC1PF2UWcfktInHhfPLPco9xTWcXV5dAT9Rkw';
-const SYNC_STORES=['setups','runs','plants','entries','photos','plans','feeds','climate','tasks','steer','strains','expenses','meters'];
-let sb=null,sbUser=null,sbBusy=false,sbLastErr='',sbPushTimer=null;
+const SB_LIB='vendor/supabase-2.117.2.js';
+/* Fotos/Videos bleiben lokal – deshalb auch keine Foto-Metadaten synchronisieren (sonst leere Kacheln auf dem Zweitgerät). */
+const SYNC_STORES=['setups','runs','plants','entries','plans','feeds','climate','tasks','steer','strains','expenses','meters'];
+let sb=null,sbPid=null,sbUser=null,sbBusy=false,sbLastErr='',sbPushTimer=null,sbGen=0;
 const sbQueue=new Set();
-function sbAvail(){return !!window.supabase;}
-function sbInit(){
-  if(!sbAvail())return;
-  try{sb=window.supabase.createClient(SB_URL,SB_KEY,{auth:{persistSession:true,autoRefreshToken:true}});}catch(e){console.error(e);return;}
-  sb.auth.onAuthStateChange((ev,session)=>{sbUser=session?.user||null;if(ev==='SIGNED_IN')sbPullAll();if(U.screen==='settings')render();});
-  sb.auth.getSession().then(({data})=>{sbUser=data?.session?.user||null;if(sbUser)sbPullAll();if(U.screen==='settings')render();}).catch(()=>{});
+const cloudMeta=()=>{META.cloud=META.cloud||{};return META.cloud;};
+function sbLoadLib(){
+  if(window.supabase)return Promise.resolve();
+  if(sbLoadLib.p)return sbLoadLib.p;
+  return sbLoadLib.p=new Promise((res,rej)=>{const sc=document.createElement('script');sc.src=SB_LIB;sc.async=true;sc.onload=()=>res();sc.onerror=()=>{sbLoadLib.p=null;rej(new Error('Cloud-Bibliothek konnte nicht geladen werden'));};document.head.appendChild(sc);});
+}
+function sbStop(){sbGen++;if(sb){try{sb.auth.stopAutoRefresh();}catch(e){}}sb=null;sbPid=null;sbUser=null;sbQueue.clear();clearTimeout(sbPushTimer);}
+async function sbInit(pid=PID(),force=false){
+  if(U.locked||!pid)return;
+  if(sb&&sbPid===pid)return;
+  sbStop();
+  if(!force&&!cloudMeta()[pid])return;
+  try{await sbLoadLib();}catch(e){sbLastErr=e.message;return;}
+  if(U.locked||PID()!==pid)return;
+  const gen=++sbGen;
+  try{sb=window.supabase.createClient(SB_URL,SB_KEY,{auth:{persistSession:true,autoRefreshToken:true,storageKey:'zb-sb-'+pid}});}catch(e){console.error(e);sb=null;return;}
+  sbPid=pid;
+  sb.auth.onAuthStateChange((ev,session)=>{
+    if(gen!==sbGen)return;
+    const was=sbUser?.id;sbUser=session?.user||null;
+    if(sbUser&&sbUser.id!==was){
+      const cm=cloudMeta()[pid];
+      cloudMeta()[pid]={email:sbUser.email,uid:sbUser.id,since:cm&&cm.uid===sbUser.id?cm.since:null,last:cm?.last||null};saveMeta();
+      setTimeout(()=>sbPullAll(),0); /* nicht im Callback selbst awaiten (Supabase-Empfehlung) */
+    }
+    if(U.screen==='settings')render();
+  });
 }
 async function sbSignUp(email,pass){
-  if(!sb)return'Cloud-Dienst nicht verfügbar';
-  sbBusy=true;render();
-  const{error}=await sb.auth.signUp({email,password:pass});
-  sbBusy=false;
+  await sbInit(PID(),true);if(!sb)return sbLastErr||'Cloud-Dienst nicht verfügbar';
+  const{error}=await sb.auth.signUp({email,password:pass,options:{emailRedirectTo:location.origin+location.pathname}});
   return error?error.message:'';
 }
 async function sbSignIn(email,pass){
-  if(!sb)return'Cloud-Dienst nicht verfügbar';
-  sbBusy=true;render();
+  await sbInit(PID(),true);if(!sb)return sbLastErr||'Cloud-Dienst nicht verfügbar';
   const{error}=await sb.auth.signInWithPassword({email,password:pass});
-  sbBusy=false;
-  return error?error.message:'';
+  return error?(/invalid login/i.test(error.message)?'E-Mail oder Passwort falsch – oder die E-Mail wurde noch nicht bestätigt.':error.message):'';
 }
-async function sbSignOut(){if(!sb)return;await sb.auth.signOut();sbUser=null;render();}
+async function sbSignOut(){
+  const pid=PID();
+  try{await sbFlushPush();}catch(e){}
+  if(sb){try{await sb.auth.signOut({scope:'local'});}catch(e){}}
+  delete cloudMeta()[pid];saveMeta();sbStop();
+  try{localStorage.removeItem('zb-sb-'+pid);}catch(e){}
+  render();
+}
 function sbQueuePush(store,id){
-  if(!sbUser||!sb)return;
+  if(U.noPush||!sbUser||!sb||sbPid!==PID())return;
   sbQueue.add(store+'::'+id);
-  clearTimeout(sbPushTimer);sbPushTimer=setTimeout(sbFlushPush,900);
+  clearTimeout(sbPushTimer);sbPushTimer=setTimeout(sbFlushPush,1200);
 }
-async function sbFlushPush(){
-  if(!sbUser||!sb||!sbQueue.size)return;
+const syncData=o=>{const{pid,_syncedAt,...rest}=o;return rest;};
+async function sbFlushPush(force=false){
+  if(!sbUser||!sb||!sbQueue.size||(U.locked&&!force)||sbPid!==PID())return;
+  clearTimeout(sbPushTimer);
   const items=[...sbQueue];sbQueue.clear();
-  for(const key of items){
-    const i=key.indexOf('::'),store=key.slice(0,i),id=key.slice(i+2);
-    const obj=byId(store,id);
-    try{
-      if(!obj)await sb.from('records').delete().match({store,id,user_id:sbUser.id});
-      else await sb.from('records').upsert({store,id,user_id:sbUser.id,data:obj,updated_at:new Date().toISOString()});
-    }catch(e){console.error('cloud push',e);sbLastErr=e.message||String(e);}
-  }
-}
-async function sbPullAll(){
-  if(!sbUser||!sb||sbBusy)return;
-  sbBusy=true;if(U.screen==='settings')render();
-  try{
-    const{data,error}=await sb.from('records').select('store,id,data,updated_at').eq('user_id',sbUser.id);
-    if(error){sbLastErr=error.message;}
-    else if(data){
-      for(const row of data){
-        if(!SYNC_STORES.includes(row.store))continue;
-        const local=byId(row.store,row.id);
-        const remoteT=+new Date(row.updated_at),localT=local&&local._syncedAt?+new Date(local._syncedAt):0;
-        if(!local||remoteT>localT){await save(row.store,{...row.data,id:row.id,pid:PID(),_syncedAt:row.updated_at},true);}
-      }
-      toast('Cloud-Sync abgeschlossen');
+  const now=new Date().toISOString(),uidv=sbUser.id;
+  const rows=items.map(k=>{const i=k.indexOf('::'),store=k.slice(0,i),id=k.slice(i+2),o=byId(store,id);
+    return {store,id,user_id:uidv,updated_at:now,data:o?syncData(o):{_del:1,_mt:Date.now()}};});
+  for(let i=0;i<rows.length;i+=200){
+    const chunk=rows.slice(i,i+200);
+    let error=null;try{({error}=await sb.from('records').upsert(chunk,{onConflict:'store,id,user_id'}));}catch(e){error=e;}
+    if(error){
+      console.error('cloud push',error);sbLastErr=error.message||String(error);
+      rows.slice(i).forEach(r=>sbQueue.add(r.store+'::'+r.id));
+      sbPushTimer=setTimeout(sbFlushPush,30000);
+      return;
     }
-  }catch(e){console.error('cloud pull',e);sbLastErr=e.message||String(e);}
-  sbBusy=false;render();
+  }
+  sbLastErr='';
 }
+async function sbPullAll(full=false){
+  if(!sbUser||!sb||sbBusy||U.locked||sbPid!==PID())return;
+  const pid=PID(),cm=cloudMeta()[pid]||{};
+  sbBusy=true;if(U.screen==='settings')render();
+  let n=0,maxT=full?null:(cm.since||null);
+  try{
+    await sbFlushPush();
+    const since=!full&&cm.since?new Date(Date.parse(cm.since)-600000).toISOString():null; /* 10 Min. Überlappung gegen Uhrzeit-Abweichungen */
+    for(let from=0;from<200000;from+=1000){
+      let q=sb.from('records').select('store,id,data,updated_at').eq('user_id',sbUser.id);
+      if(since)q=q.gt('updated_at',since);
+      const{data,error}=await q.order('updated_at',{ascending:true}).order('store').order('id').range(from,from+999);
+      if(error)throw error;
+      for(const row of data||[]){
+        if(!maxT||row.updated_at>maxT)maxT=row.updated_at;
+        if(!SYNC_STORES.includes(row.store))continue;
+        const d=row.data||{},local=byId(row.store,row.id);
+        const rt=+d._mt||Date.parse(row.updated_at)||0,lt=local?(+local._mt||0):0;
+        if(local&&lt>=rt)continue;
+        if(d._del){if(local){remove(row.store,row.id,true);n++;}continue;}
+        save(row.store,{...d,id:row.id,pid},true);n++;
+      }
+      if(!data||data.length<1000)break;
+    }
+    await flush();
+    cloudMeta()[pid]={...cm,email:sbUser.email,uid:sbUser.id,since:maxT,last:new Date().toISOString()};saveMeta();
+    sbLastErr='';
+    if(n)toast(`Cloud: ${plural(n,'Änderung','Änderungen')} übernommen`);else if(full)toast('Cloud ist auf dem neuesten Stand');
+  }catch(e){console.error('cloud pull',e);sbLastErr=e.message||String(e);}
+  sbBusy=false;
+  if(n||U.screen==='settings')render();
+}
+/* Beim Verlassen der App sofort hochladen, bei Rückkehr nach >5 Min. abgleichen */
+document.addEventListener('visibilitychange',()=>{
+  if(document.hidden){sbFlushPush();return;}
+  const cm=cloudMeta()[PID()];
+  if(sbUser&&cm&&(!cm.last||Date.now()-Date.parse(cm.last)>300000))sbPullAll();
+});
+window.addEventListener('online',()=>{if(sbUser){sbFlushPush();sbPullAll();}});
 function cloudSection(){
-  if(!sbAvail())return '';
+  const cm=cloudMeta()[PID()];
   if(!sbUser)return `<section><div class="sec-h"><span class="sec">Cloud-Sync</span></div><div class="card stack">
-    <p class="small">Melde dich mit einem Konto an, um deine Daten (Journal, Pflanzen, Pläne, Aufgaben) geräteübergreifend zu synchronisieren. Fotos &amp; Videos bleiben vorerst nur lokal. Deine Daten liegen dann unverschlüsselt auf dem Server – nicht für streng geheime Angaben geeignet.</p>
+    <p class="small">Melde dich an, um Journal, Pflanzen, Pläne und Aufgaben dieses Profils geräteübergreifend zu synchronisieren. Fotos und Videos bleiben nur auf diesem Gerät.</p>
+    <p class="note">Die Daten liegen dann unverschlüsselt auf dem Server (geschützt durch dein Konto). Für streng vertrauliche Angaben nicht geeignet.</p>
+    ${cm?`<p class="small warn-txt">Zuletzt verbunden mit ${esc(cm.email||'')}. ${sb?'Anmeldung abgelaufen – bitte neu anmelden.':'Verbinde …'}</p>`:''}
+    ${sbLastErr?`<p class="small warn-txt">${esc(sbLastErr)}</p>`:''}
     <div class="row"><button class="btn small primary" data-act="cloudLogin">Anmelden / Registrieren</button></div>
     </div></section>`;
   return `<section><div class="sec-h"><span class="sec">Cloud-Sync</span></div><div class="card stack">
   <p class="small">Angemeldet als <b>${esc(sbUser.email)}</b>${sbBusy?' · synchronisiere …':''}</p>
-  <div class="row"><button class="btn small" data-act="cloudSync" ${sbBusy?'disabled':''}>Jetzt synchronisieren</button><button class="btn small ghost" data-act="cloudLogout">Abmelden</button></div>
+  <p class="note">${cm?.last?`Zuletzt abgeglichen: ${new Date(cm.last).toLocaleString('de-DE',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})}`:'Noch nicht abgeglichen'}${sbQueue.size?` · ${plural(sbQueue.size,'Änderung wartet','Änderungen warten')}`:''}</p>
+  ${sbLastErr?`<p class="small warn-txt">Letzter Fehler: ${esc(sbLastErr)}</p>`:''}
+  <div class="row"><button class="btn small primary" data-act="cloudSync" ${sbBusy?'disabled':''}>Jetzt synchronisieren</button><button class="btn small" data-act="cloudFull" ${sbBusy?'disabled':''}>Vollständig abgleichen</button><button class="btn small ghost" data-act="cloudLogout">Abmelden</button></div>
   </div></section>`;
 }
 function cloudAuthSheet(){
   openSheet('Cloud-Konto',
-   `<p class="note">Mit E-Mail und Passwort. Falls du noch kein Konto hast, einfach registrieren.</p>
-   ${fld('E-Mail',`<input name="email" type="email" autocomplete="email" required autofocus>`)}
-   ${fld('Passwort',`<input name="pass" type="password" autocomplete="current-password" minlength="6" required>`)}
-   <p class="msg small" id="cloudMsg" role="alert"></p>
-   <div class="row"><button type="button" class="btn small" data-act="cloudDoRegister">Registrieren</button></div>`,
+   `<p class="note">Mit E-Mail und Passwort. Das Konto gilt nur für das Profil „${esc(profile().name)}“. Noch kein Konto? Einfach registrieren.</p>
+   ${fld('E-Mail',`<input name="email" type="email" autocomplete="email" inputmode="email" required autofocus>`)}
+   ${fld('Passwort',`<input name="pass" type="password" autocomplete="current-password" minlength="8" required>`)}
+   <p class="small warn-txt" id="cloudMsg" role="alert"></p>
+   <div class="row"><button type="button" class="btn small" data-act="cloudDoRegister">Neues Konto registrieren</button></div>`,
    'Anmelden',
    async d=>{
      if(!d.email||!d.pass){toast('E-Mail und Passwort angeben');return false;}
      const err=await sbSignIn(d.email,d.pass);
      if(err){const m=$('#cloudMsg');if(m)m.textContent=err;return false;}
-     toast('Angemeldet');return true;
+     toast('Angemeldet – synchronisiere …');return true;
    });
 }
 Object.assign(A,{
-  cloudLogin:()=>cloudAuthSheet(),
-  cloudLogout:async()=>{await sbSignOut();toast('Abgemeldet');render();},
+  cloudLogin:()=>{sbInit(PID(),true);cloudAuthSheet();},
+  cloudLogout:async()=>{await sbSignOut();toast('Abgemeldet');},
   cloudSync:()=>sbPullAll(),
+  cloudFull:()=>sbPullAll(true),
   cloudDoRegister:async el=>{
     const f=el.closest('form')||$('#sheetForm');
-    const email=f.elements.namedItem('email')?.value,pass=f.elements.namedItem('pass')?.value;
-    if(!email||!pass||pass.length<6){toast('E-Mail + Passwort (mind. 6 Zeichen) angeben');return;}
-    const err=await sbSignUp(email,pass);
+    const email=(f.elements.namedItem('email')?.value||'').trim(),pass=f.elements.namedItem('pass')?.value||'';
     const m=$('#cloudMsg');
+    if(!email||pass.length<8){if(m)m.textContent='E-Mail und Passwort (mindestens 8 Zeichen) angeben';return;}
+    el.disabled=true;const err=await sbSignUp(email,pass);el.disabled=false;
     if(err){if(m)m.textContent=err;return;}
-    if(m)m.textContent='Konto angelegt – bitte bestätige den Link in der E-Mail, dann anmelden.';
+    if(m)m.textContent='Konto angelegt – bitte den Link in der E-Mail bestätigen, dann hier anmelden.';
     toast('Registrierung gestartet – E-Mail bestätigen');
   }
 });
-/* wrap save/remove to also push to the cloud */
+/* save/remove erweitern: Änderungszeit setzen und in die Cloud-Warteschlange legen (skip = aus der Cloud kommend / intern) */
 (()=>{
   const _save=save,_remove=remove;
-  save=(store,obj,skipPush)=>{const r=_save(store,obj);if(!skipPush&&SYNC_STORES.includes(store)&&obj&&obj.id)sbQueuePush(store,obj.id);return r;};
-  remove=(store,id)=>{const r=_remove(store,id);if(SYNC_STORES.includes(store))sbQueuePush(store,id);return r;};
+  save=(store,obj,skip)=>{const sync=SYNC_STORES.includes(store)&&obj&&obj.id;if(sync&&!skip)obj._mt=Date.now();const r=_save(store,obj);if(sync&&!skip)sbQueuePush(store,obj.id);return r;};
+  remove=(store,id,skip)=>{const r=_remove(store,id);if(!skip&&SYNC_STORES.includes(store))sbQueuePush(store,id);return r;};
 })();
 
 boot();
-sbInit();
 </script>
 </body></html>
