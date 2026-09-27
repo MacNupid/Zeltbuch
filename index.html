@@ -11,6 +11,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="Zeltbuch">
 <title>Zeltbuch</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=IBM+Plex+Mono:wght@500;600&family=Sedgwick+Ave+Display&display=swap" rel="stylesheet">
@@ -1492,6 +1493,8 @@ function viewSettings(){
   <p class="small">${plural(media.length,'Foto/Video','Fotos/Videos')} · ${fmtMB(msize)}${est?` · Browser belegt insgesamt ${fmtMB(est.usage||0)}${est.quota?` von ca. ${fmtMB(est.quota)}`:''}`:''}</p>
   </div></section>
 
+  ${cloudSection()}
+
   <section><div class="sec-h"><span class="sec">Profil löschen</span></div><div class="card stack"><p class="small">Löscht das Profil „${esc(P.name)}“ mit allen Runs, Plänen, Fotos und Videos von diesem Gerät.</p><button class="btn small danger" data-act="profileDel" data-confirm>Profil endgültig löschen</button></div></section>
 
   <section class="card stack"><span class="sec">Über</span><p class="note">Zeltbuch · Testversion 7. Herstellerpläne Stand ${LIB_ASOF}. Erinnerungen erscheinen in der App; Push-Benachrichtigungen kommen mit der Android-Version.</p></section>`;
@@ -2386,6 +2389,118 @@ document.addEventListener('change',e=>{
 });
 document.addEventListener('input',e=>{if(e.target.id==='tlPos'){tlStop();const b=$('[data-act=tlPlay]');if(b)b.textContent='Abspielen';tlShow(+e.target.value);}});
 
+/* ================= Cloud-Sync (Supabase) ================= */
+const SB_URL='https://eertbwiiovzgjwrzvzrs.supabase.co';
+const SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVlcnRid2lpb3Z6Z2p3cnp2enJzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTA0OTg4NjIsImV4cCI6MjEwNjA3NDg2Mn0.jpdTLNPC1PF2UWcfktInHhfPLPco9xTWcXV5dAT9Rkw';
+const SYNC_STORES=['setups','runs','plants','entries','photos','plans','feeds','climate','tasks','steer','strains','expenses','meters'];
+let sb=null,sbUser=null,sbBusy=false,sbLastErr='',sbPushTimer=null;
+const sbQueue=new Set();
+function sbAvail(){return !!window.supabase;}
+function sbInit(){
+  if(!sbAvail())return;
+  try{sb=window.supabase.createClient(SB_URL,SB_KEY,{auth:{persistSession:true,autoRefreshToken:true}});}catch(e){console.error(e);return;}
+  sb.auth.onAuthStateChange((ev,session)=>{sbUser=session?.user||null;if(ev==='SIGNED_IN')sbPullAll();if(U.screen==='settings')render();});
+  sb.auth.getSession().then(({data})=>{sbUser=data?.session?.user||null;if(sbUser)sbPullAll();if(U.screen==='settings')render();}).catch(()=>{});
+}
+async function sbSignUp(email,pass){
+  if(!sb)return'Cloud-Dienst nicht verfügbar';
+  sbBusy=true;render();
+  const{error}=await sb.auth.signUp({email,password:pass});
+  sbBusy=false;
+  return error?error.message:'';
+}
+async function sbSignIn(email,pass){
+  if(!sb)return'Cloud-Dienst nicht verfügbar';
+  sbBusy=true;render();
+  const{error}=await sb.auth.signInWithPassword({email,password:pass});
+  sbBusy=false;
+  return error?error.message:'';
+}
+async function sbSignOut(){if(!sb)return;await sb.auth.signOut();sbUser=null;render();}
+function sbQueuePush(store,id){
+  if(!sbUser||!sb)return;
+  sbQueue.add(store+'::'+id);
+  clearTimeout(sbPushTimer);sbPushTimer=setTimeout(sbFlushPush,900);
+}
+async function sbFlushPush(){
+  if(!sbUser||!sb||!sbQueue.size)return;
+  const items=[...sbQueue];sbQueue.clear();
+  for(const key of items){
+    const i=key.indexOf('::'),store=key.slice(0,i),id=key.slice(i+2);
+    const obj=byId(store,id);
+    try{
+      if(!obj)await sb.from('records').delete().match({store,id,user_id:sbUser.id});
+      else await sb.from('records').upsert({store,id,user_id:sbUser.id,data:obj,updated_at:new Date().toISOString()});
+    }catch(e){console.error('cloud push',e);sbLastErr=e.message||String(e);}
+  }
+}
+async function sbPullAll(){
+  if(!sbUser||!sb||sbBusy)return;
+  sbBusy=true;if(U.screen==='settings')render();
+  try{
+    const{data,error}=await sb.from('records').select('store,id,data,updated_at').eq('user_id',sbUser.id);
+    if(error){sbLastErr=error.message;}
+    else if(data){
+      for(const row of data){
+        if(!SYNC_STORES.includes(row.store))continue;
+        const local=byId(row.store,row.id);
+        const remoteT=+new Date(row.updated_at),localT=local&&local._syncedAt?+new Date(local._syncedAt):0;
+        if(!local||remoteT>localT){await save(row.store,{...row.data,id:row.id,pid:PID(),_syncedAt:row.updated_at},true);}
+      }
+      toast('Cloud-Sync abgeschlossen');
+    }
+  }catch(e){console.error('cloud pull',e);sbLastErr=e.message||String(e);}
+  sbBusy=false;render();
+}
+function cloudSection(){
+  if(!sbAvail())return '';
+  if(!sbUser)return `<section><div class="sec-h"><span class="sec">Cloud-Sync</span></div><div class="card stack">
+    <p class="small">Melde dich mit einem Konto an, um deine Daten (Journal, Pflanzen, Pläne, Aufgaben) geräteübergreifend zu synchronisieren. Fotos &amp; Videos bleiben vorerst nur lokal. Deine Daten liegen dann unverschlüsselt auf dem Server – nicht für streng geheime Angaben geeignet.</p>
+    <div class="row"><button class="btn small primary" data-act="cloudLogin">Anmelden / Registrieren</button></div>
+    </div></section>`;
+  return `<section><div class="sec-h"><span class="sec">Cloud-Sync</span></div><div class="card stack">
+  <p class="small">Angemeldet als <b>${esc(sbUser.email)}</b>${sbBusy?' · synchronisiere …':''}</p>
+  <div class="row"><button class="btn small" data-act="cloudSync" ${sbBusy?'disabled':''}>Jetzt synchronisieren</button><button class="btn small ghost" data-act="cloudLogout">Abmelden</button></div>
+  </div></section>`;
+}
+function cloudAuthSheet(){
+  openSheet('Cloud-Konto',
+   `<p class="note">Mit E-Mail und Passwort. Falls du noch kein Konto hast, einfach registrieren.</p>
+   ${fld('E-Mail',`<input name="email" type="email" autocomplete="email" required autofocus>`)}
+   ${fld('Passwort',`<input name="pass" type="password" autocomplete="current-password" minlength="6" required>`)}
+   <p class="msg small" id="cloudMsg" role="alert"></p>
+   <div class="row"><button type="button" class="btn small" data-act="cloudDoRegister">Registrieren</button></div>`,
+   'Anmelden',
+   async d=>{
+     if(!d.email||!d.pass){toast('E-Mail und Passwort angeben');return false;}
+     const err=await sbSignIn(d.email,d.pass);
+     if(err){const m=$('#cloudMsg');if(m)m.textContent=err;return false;}
+     toast('Angemeldet');return true;
+   });
+}
+Object.assign(A,{
+  cloudLogin:()=>cloudAuthSheet(),
+  cloudLogout:async()=>{await sbSignOut();toast('Abgemeldet');render();},
+  cloudSync:()=>sbPullAll(),
+  cloudDoRegister:async el=>{
+    const f=el.closest('form')||$('#sheetForm');
+    const email=f.elements.namedItem('email')?.value,pass=f.elements.namedItem('pass')?.value;
+    if(!email||!pass||pass.length<6){toast('E-Mail + Passwort (mind. 6 Zeichen) angeben');return;}
+    const err=await sbSignUp(email,pass);
+    const m=$('#cloudMsg');
+    if(err){if(m)m.textContent=err;return;}
+    if(m)m.textContent='Konto angelegt – bitte bestätige den Link in der E-Mail, dann anmelden.';
+    toast('Registrierung gestartet – E-Mail bestätigen');
+  }
+});
+/* wrap save/remove to also push to the cloud */
+(()=>{
+  const _save=save,_remove=remove;
+  save=(store,obj,skipPush)=>{const r=_save(store,obj);if(!skipPush&&SYNC_STORES.includes(store)&&obj&&obj.id)sbQueuePush(store,obj.id);return r;};
+  remove=(store,id)=>{const r=_remove(store,id);if(SYNC_STORES.includes(store))sbQueuePush(store,id);return r;};
+})();
+
 boot();
+sbInit();
 </script>
 </body></html>
